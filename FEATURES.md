@@ -21,6 +21,10 @@ countdown also appear on the clock screensaver (`ClockDream`/`ClockActivity`), c
 with a few pixels of jitter each minute so nothing burns in — on by default whenever the Prayer
 card is on, no separate switch.
 
+![Waktu Solat card on Home](docs/my-home.png)
+![Prayer zone picker](docs/my-prayer-zone-picker.png)
+![Clock screensaver with the full prayer table](docs/my-screensaver.png)
+
 - **API**: [api.waktusolat.app](https://api.waktusolat.app) (`mptwaktusolat/api-waktusolat` on
   GitHub) — official JAKIM data, no key needed.
   - `GET /v2/solat/{zone}` — a month of prayer times for a JAKIM zone code (e.g. `JHR02`).
@@ -56,6 +60,8 @@ upcoming one, and every holiday in the current and next calendar month.
   source to carry yet. Remove it once upstream catches up, or add your own the same way for a
   similar situation.
 - **Code**: `Holidays.java`, `LauncherSettingsActivity.showHolidayStatesPicker()`.
+
+![Public holiday states picker](docs/my-holiday-states-picker.png)
 
 ## 3. Continue Watching row
 
@@ -184,11 +190,9 @@ TV_HOST=<tv-ip> tools/restore.sh examples/<your-tv>/debloat.txt
 - `CleanTV-Malaysia`
 - `my-cleanyourtv`
 
-## Screenshots for the README
+## Screenshots
 
-I can capture Home-screen screenshots directly (done several already during this build). The two
-new **Settings dialogs** (Prayer zone picker, Public holiday states picker) need a real long-press
-on the remote to open — ADB's synthetic long-press doesn't reliably trigger it on this TV's Android
-build, so I wasn't able to screenshot those two automatically. If you want them in the README,
-either send me a couple of photos/screenshots from the actual remote (same as the photos you've
-been sending), or I can describe the flow in words only. Let me know which you'd prefer.
+All captured directly from the TV over ADB: `docs/my-home.png` (Home, with both cards and the
+dock), `docs/my-prayer-zone-picker.png` and `docs/my-holiday-states-picker.png` (the two Launcher
+settings dialogs), and `docs/my-screensaver.png` (the clock screensaver). Embedded above, next to
+the feature each one shows.
