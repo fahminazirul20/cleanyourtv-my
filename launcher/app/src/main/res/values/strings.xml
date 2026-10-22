@@ -50,6 +50,19 @@
     <string name="rows_below_dock_label">Rows below dock</string>
     <string name="wallpaper_label">Wallpaper</string>
     <string name="wallpaper_state">Wallpaper: %1$s</string>
+    <!-- Launcher settings: opens the 60-zone JAKIM picker (JakimZones) for the Waktu Solat card. -->
+    <string name="prayer_zone_setting">Prayer zone</string>
+    <string name="prayer_zone_setting_state">Prayer zone: %1$s</string>
+
+    <!-- Launcher settings: the multi-select Public Holidays state picker. -->
+    <string name="holiday_states_setting">Public holiday states</string>
+    <string name="holiday_states_all">Malaysia (all states)</string>
+    <!-- Neutral button: clears the on-TV choice, back to the Prayer zone\'s own state (+ any
+         extra_holiday_states from a theme). -->
+    <string name="holiday_states_auto">Auto (by prayer zone)</string>
+    <!-- The row's own label on the settings screen. %1$s is "Malaysia (all states)", "Auto", or a
+         comma list of state names. -->
+    <string name="holiday_states_setting_state">Public holidays: %1$s</string>
     <string name="wallpaper_none">None</string>
     <string name="wallpaper_applied">Wallpaper changed</string>
     <string name="wallpaper_theme_default">Theme default</string>
@@ -137,6 +150,20 @@
     <string name="race_countdown_minutes">%1$d min</string>
     <string name="race_countdown_hours">%1$dh %2$dm</string>
     <string name="race_countdown_days">%1$dd %2$dh</string>
+    <!-- Waktu Solat card (show_prayer_card / prayer_zone): %1$s is the zone's state name, e.g. "Johor". -->
+    <string name="prayer_zone_label">Waktu Solat %1$s</string>
+    <!-- %1$s the prayer name (e.g. "Zohor"), %2$s its time, %3$s a countdown like "2h 10m". -->
+    <string name="prayer_next">%1$s %2$s in %3$s</string>
+
+    <!-- Public Holidays card (Johor, Selangor), from Holidays.java. -->
+    <string name="holiday_label">Public Holidays</string>
+    <!-- %1$s the holiday's name, shown when today is that holiday. -->
+    <string name="holiday_today">Today: %1$s</string>
+    <!-- %1$s the next holiday\'s name, %2$s a short date like "23 Oct". -->
+    <string name="holiday_next">Next: %1$s · %2$s</string>
+    <!-- One line in the list below the headline: %1$s a short date, %2$s the holiday\'s name. -->
+    <string name="holiday_list_line">%1$s — %2$s</string>
+    <string name="holiday_none">No holidays this month or next</string>
     <!-- Cinematic top shelf (cinematic_home): the line under the focused dock app's name; %1$s is when it was
          last opened, e.g. "5 minutes ago" or "yesterday, 9:40 pm". -->
     <string name="last_opened">Last opened %1$s</string>

@@ -160,6 +160,13 @@ final class Config {
     final boolean wallpaperCaptions;
     /** Answer VIEW_INPUTS with the Inputs menu (handle_view_inputs); see InputsRequestActivity. */
     final boolean handleViewInputs;
+    /** Waktu Solat card under the clock (config.xml, show_prayer_card). */
+    final boolean showPrayerCard;
+    /** JAKIM zone for the Waktu Solat card, e.g. "JHR02" (config.xml, prayer_zone). */
+    final String prayerZone;
+    /** Extra mycal-api state slugs for the Public Holidays card, beyond the Prayer zone's own state
+     *  (config.xml, extra_holiday_states). Empty unless config or a theme sets it. */
+    final List<String> extraHolidayStates;
 
     private Config(List<String> dockApps, boolean fillDock, List<String> hiddenApps, String liveTvPackage,
                    String liveTvAction, String liveTvInputId, Map<String, String> launchActions, Map<String, String> appLabels,
@@ -173,7 +180,7 @@ final class Config {
                    Festival festival, int[] inputKeycodes, List<String> appKeys, String stockHomeRedirect,
                    List<RaceWeekend.Race> raceCalendar, boolean cinematicHome, boolean ambientGlow, boolean appGlow, int homeIdleClockMinutes,
                    boolean keyFilter, boolean dockGlass, String glowStyle, boolean wallpaperCaptions,
-                   boolean handleViewInputs) {
+                   boolean handleViewInputs, boolean showPrayerCard, String prayerZone, List<String> extraHolidayStates) {
         this.handleViewInputs = handleViewInputs;
         this.inputKeycodes = inputKeycodes;
         this.appKeys = Collections.unmodifiableList(appKeys);
@@ -239,6 +246,9 @@ final class Config {
         this.dockGlass = dockGlass;
         this.glowStyle = glowStyle(glowStyle);
         this.wallpaperCaptions = wallpaperCaptions;
+        this.showPrayerCard = showPrayerCard;
+        this.prayerZone = prayerZone;
+        this.extraHolidayStates = Collections.unmodifiableList(extraHolidayStates);
     }
 
     /** A known glow_style, or radial (the default) for anything else. */
@@ -293,6 +303,9 @@ final class Config {
         boolean homeSettings = res.getBoolean(R.bool.show_home_settings_shortcut);
         boolean showStats = res.getBoolean(R.bool.show_stats);
         boolean library = res.getBoolean(R.bool.app_library);
+        boolean showPrayerCard = res.getBoolean(R.bool.show_prayer_card);
+        String prayerZone = res.getString(R.string.prayer_zone).trim();
+        List<String> extraHolidayStates = splitCsv(res.getString(R.string.extra_holiday_states));
         int background = 0xFF000000;
         int skyIntensity = res.getInteger(R.integer.sky_intensity);
         int[] settingsKeycodes = res.getIntArray(R.array.settings_key_keycodes);
@@ -356,6 +369,11 @@ final class Config {
             homeSettings = bool(json, "show_home_settings_shortcut", homeSettings);
             showStats = bool(json, "show_stats", showStats);
             library = bool(json, "app_library", library);
+            showPrayerCard = bool(json, "show_prayer_card", showPrayerCard);
+            prayerZone = string(json, "prayer_zone", prayerZone).trim();
+            if (json.has("extra_holiday_states")) {
+                extraHolidayStates = splitCsv(string(json, "extra_holiday_states", ""));
+            }
             background = color(json, "background_color", background);
             skyIntensity = integer(json, "sky_intensity", skyIntensity, 0, 100);
             settingsKeycodes = intArray(json, "settings_key_keycodes", settingsKeycodes);
@@ -383,6 +401,7 @@ final class Config {
         if (chosenRows >= 0 && chosenRows <= 3) rowsBelow = chosenRows;
         animations = choices.getBoolean("animations", animations);
         advancedEffects = choices.getBoolean("advanced_effects", advancedEffects);
+        prayerZone = choices.getString("prayer_zone", prayerZone);
         File wallpaper = dir != null ? new File(dir, WALLPAPER_NAME) : null;
         if (wallpaper != null && !(wallpaper.isFile() && wallpaper.length() > 0)) wallpaper = null;
         // A theme can also switch the wallpaper off while the file is still there.
@@ -431,7 +450,8 @@ final class Config {
                 Math.max(0, Math.min(100, skyIntensity)), settingsKeycodes, settingsKeyPanel, wallpaperEnabled, wallpaper,
                 wallpapers, rotationMinutes, wallpaperDim, dockOpacity, wallpaperOrder, applied,
                 festival, inputKeycodes, appKeys, stockHomeRedirect, json == null ? Collections.emptyList() : raceCalendar(json), cinematic, ambientGlow, appGlow,
-                Math.max(0, idleClockMinutes), keyFilter, dockGlass, glowStyle, wallpaperCaptions, handleViewInputs);
+                Math.max(0, idleClockMinutes), keyFilter, dockGlass, glowStyle, wallpaperCaptions,
+                handleViewInputs, showPrayerCard, prayerZone, extraHolidayStates);
     }
 
     /**
@@ -537,6 +557,17 @@ final class Config {
             Log.w(TAG, "ignoring " + file + ": " + e.getMessage());
             return null;
         }
+    }
+
+    /** A comma list into trimmed, non-empty entries; "" and "a,,b" both skip the empty pieces. */
+    private static List<String> splitCsv(String csv) {
+        List<String> out = new ArrayList<>();
+        if (csv == null) return out;
+        for (String part : csv.split(",")) {
+            String trimmed = part.trim();
+            if (!trimmed.isEmpty()) out.add(trimmed);
+        }
+        return out;
     }
 
     private static String string(JSONObject o, String key, String fallback) {

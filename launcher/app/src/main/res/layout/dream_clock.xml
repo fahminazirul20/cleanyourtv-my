@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Screensaver (ClockDream): clock and date that drift around a black screen over an ambient glow. -->
+<!-- Screensaver (ClockDream): clock, date and (show_prayer_card) the Waktu Solat table, centred on a
+     black screen over an ambient glow, with a small jitter each minute so nothing burns in. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -14,7 +15,8 @@
         android:id="@+id/dreamContent"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:gravity="center_horizontal">
 
         <LinearLayout
             android:layout_width="wrap_content"
@@ -49,7 +51,6 @@
         <TextClock
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="6dp"
             android:layout_marginTop="4dp"
             android:format12Hour="@string/date_format"
             android:format24Hour="@string/date_format"
@@ -58,5 +59,72 @@
             android:fontFamily="@font/outfit_regular"
             android:letterSpacing="0.14"
             android:textAllCaps="true" />
+
+        <!-- Waktu Solat table (show_prayer_card): every time today, the current/next one picked out
+             bold (gold inside 15 minutes), same styling as the Home card's table. Gone when the card
+             is off or no prayer data is cached yet. -->
+        <LinearLayout
+            android:id="@+id/dreamPrayerTable"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical">
+                <TextView android:text="🌙" style="@style/PrayerColumnIcon" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Imsak" style="@style/PrayerColumnLabel" />
+                <TextView android:id="@+id/dreamImsak" android:layout_width="wrap_content" android:layout_height="wrap_content" style="@style/PrayerColumnTime" />
+            </LinearLayout>
+            <View style="@style/PrayerColumnDivider" />
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical">
+                <TextView android:text="🌄" style="@style/PrayerColumnIcon" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Subuh" style="@style/PrayerColumnLabel" />
+                <TextView android:id="@+id/dreamSubuh" android:layout_width="wrap_content" android:layout_height="wrap_content" style="@style/PrayerColumnTime" />
+            </LinearLayout>
+            <View style="@style/PrayerColumnDivider" />
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical">
+                <TextView android:text="🌅" style="@style/PrayerColumnIcon" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Syuruk" style="@style/PrayerColumnLabel" />
+                <TextView android:id="@+id/dreamSyuruk" android:layout_width="wrap_content" android:layout_height="wrap_content" style="@style/PrayerColumnTime" />
+            </LinearLayout>
+            <View style="@style/PrayerColumnDivider" />
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical">
+                <TextView android:text="☀️" style="@style/PrayerColumnIcon" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Zohor" style="@style/PrayerColumnLabel" />
+                <TextView android:id="@+id/dreamZohor" android:layout_width="wrap_content" android:layout_height="wrap_content" style="@style/PrayerColumnTime" />
+            </LinearLayout>
+            <View style="@style/PrayerColumnDivider" />
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical">
+                <TextView android:text="⛅" style="@style/PrayerColumnIcon" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Asar" style="@style/PrayerColumnLabel" />
+                <TextView android:id="@+id/dreamAsar" android:layout_width="wrap_content" android:layout_height="wrap_content" style="@style/PrayerColumnTime" />
+            </LinearLayout>
+            <View style="@style/PrayerColumnDivider" />
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical">
+                <TextView android:text="🌇" style="@style/PrayerColumnIcon" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Maghrib" style="@style/PrayerColumnLabel" />
+                <TextView android:id="@+id/dreamMaghrib" android:layout_width="wrap_content" android:layout_height="wrap_content" style="@style/PrayerColumnTime" />
+            </LinearLayout>
+            <View style="@style/PrayerColumnDivider" />
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical">
+                <TextView android:text="✨" style="@style/PrayerColumnIcon" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Isyak" style="@style/PrayerColumnLabel" />
+                <TextView android:id="@+id/dreamIsyak" android:layout_width="wrap_content" android:layout_height="wrap_content" style="@style/PrayerColumnTime" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Next prayer + countdown, under the table. Same gone-conditions as the table above. -->
+        <TextView
+            android:id="@+id/dreamPrayer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:textColor="#B3FFFFFF"
+            android:textSize="20sp"
+            android:fontFamily="@font/outfit_medium"
+            android:letterSpacing="0.02"
+            android:includeFontPadding="false"
+            android:visibility="gone" />
     </LinearLayout>
 </FrameLayout>

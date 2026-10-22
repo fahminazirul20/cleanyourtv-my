@@ -170,6 +170,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private List<RaceWeekend.Race> raceCalendar;
     private View racePanel;
     private TextView raceKicker, raceHeadline, raceSessions;
+    /** config.xml show_prayer_card / prayer_zone, overridable by a theme. */
+    private boolean showPrayerCard;
+    private String prayerZone;
+    private View prayerPanel;
+    private TextView prayerZoneLabel, prayerNext, prayerHijri;
+    private TextView prayerTimeImsak, prayerTimeSubuh, prayerTimeSyuruk, prayerTimeZohor, prayerTimeAsar, prayerTimeMaghrib, prayerTimeIsyak;
+    private View watchNextScroll;
+    private LinearLayout watchNextRow;
+    private View holidayPanel;
+    private TextView holidayHeadline, holidayList;
     /** config.xml show_stats, overridable by a theme. Off: the line is gone and nothing is read. */
     private boolean showStats;
     private boolean shamsi;
@@ -322,6 +332,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         public void run() {
             updateGreeting();
             updateRace();
+            if (showPrayerCard) updatePrayerPanel();
+            updateHolidayPanel();
             // The pill follows the network callbacks and each return to Home; only the diya's flame follows the
             // signal level, so only it needs this minute's binder calls (about 7 ms on the UI thread).
             if (festive) updateWifiLabel();
@@ -415,6 +427,41 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         raceKicker = findViewById(R.id.raceKicker);
         raceHeadline = findViewById(R.id.raceHeadline);
         raceSessions = findViewById(R.id.raceSessions);
+        showPrayerCard = cfg.showPrayerCard;
+        prayerZone = cfg.prayerZone;
+        prayerPanel = findViewById(R.id.prayerPanel);
+        prayerZoneLabel = findViewById(R.id.prayerZoneLabel);
+        prayerNext = findViewById(R.id.prayerNext);
+        prayerHijri = findViewById(R.id.prayerHijri);
+        prayerTimeImsak = findViewById(R.id.prayerTimeImsak);
+        prayerTimeSubuh = findViewById(R.id.prayerTimeSubuh);
+        prayerTimeSyuruk = findViewById(R.id.prayerTimeSyuruk);
+        prayerTimeZohor = findViewById(R.id.prayerTimeZohor);
+        prayerTimeAsar = findViewById(R.id.prayerTimeAsar);
+        prayerTimeMaghrib = findViewById(R.id.prayerTimeMaghrib);
+        prayerTimeIsyak = findViewById(R.id.prayerTimeIsyak);
+        if (showPrayerCard) {
+            PrayerTimes.refreshIfNeeded(this, prayerZone, this::updatePrayerPanel);
+        }
+        watchNextScroll = findViewById(R.id.watchNextScroll);
+        watchNextRow = findViewById(R.id.watchNextRow);
+        WatchNext.load(this, this::showWatchNext);
+        holidayPanel = findViewById(R.id.holidayPanel);
+        holidayHeadline = findViewById(R.id.holidayHeadline);
+        holidayList = findViewById(R.id.holidayList);
+        SharedPreferences launcherChoices = getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE);
+        List<String> holidayStates;
+        if (launcherChoices.contains("holiday_states")) {
+            // Explicitly set on this TV (Launcher settings > Public holiday states): "" is
+            // Malaysia/all states, otherwise a comma list of mycal-api slugs.
+            String stored = launcherChoices.getString("holiday_states", "");
+            holidayStates = stored.isEmpty() ? java.util.Collections.emptyList() : java.util.Arrays.asList(stored.split(","));
+        } else {
+            holidayStates = new java.util.ArrayList<>();
+            holidayStates.add(JakimZones.holidayState(prayerZone));
+            for (String s : cfg.extraHolidayStates) if (!holidayStates.contains(s)) holidayStates.add(s);
+        }
+        Holidays.refreshIfNeeded(this, holidayStates, this::updateHolidayPanel);
         showStats = cfg.showStats;
         shamsi = cfg.shamsiDate;
         greetingName = cfg.greetingName;
@@ -2172,6 +2219,166 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         raceSessions.setText(row);
         racePanel.setVisibility(View.VISIBLE);
+    }
+
+    // ---- Waktu Solat panel (config.xml show_prayer_card / prayer_zone) ------------------------------
+
+    /**
+     * Shows or hides the prayer-times panel for this minute. Text only, set once a minute with the
+     * clock, same as the race panel; the underlying data is a day lookup in the cached month, no
+     * network on this call.
+     */
+    private void updatePrayerPanel() {
+        PrayerTimes.Entry next = PrayerTimes.next();
+        if (next == null) {
+            prayerPanel.setVisibility(View.GONE);
+            return;
+        }
+        prayerZoneLabel.setText(getString(R.string.prayer_zone_label, PrayerTimes.stateName(prayerZone)));
+        java.time.format.DateTimeFormatter when = java.time.format.DateTimeFormatter.ofPattern(
+                android.text.format.DateFormat.is24HourFormat(this) ? "HH:mm" : "h:mm a", Locale.getDefault())
+                .withZone(PrayerTimes.MALAYSIA);
+        java.time.Duration until = java.time.Duration.between(java.time.Instant.now(), next.time);
+        String in = RaceWeekend.countdown(getResources(), until);
+        prayerNext.setText(getString(R.string.prayer_next, next.name, when.format(next.time), in));
+        // Within 15 minutes of the next prayer: pick it out in accent colour instead of plain white.
+        boolean soon = !until.isNegative() && until.toMinutes() < 15;
+        prayerNext.setTextColor(soon ? 0xFFE8A33D : 0xFFFFFFFF);
+
+        String hijri = PrayerTimes.todayHijri();
+        prayerHijri.setText(hijri);
+        prayerHijri.setVisibility(hijri.isEmpty() ? View.GONE : View.VISIBLE);
+
+        List<PrayerTimes.Entry> all = PrayerTimes.todayAll();
+        if (all.size() == 7) {
+            TextView[] cells = {prayerTimeImsak, prayerTimeSubuh, prayerTimeSyuruk, prayerTimeZohor, prayerTimeAsar, prayerTimeMaghrib, prayerTimeIsyak};
+            java.time.Instant now = java.time.Instant.now();
+            for (int i = 0; i < cells.length; i++) {
+                PrayerTimes.Entry entry = all.get(i);
+                cells[i].setText(when.format(entry.time));
+                if (entry.name.equals(next.name)) {
+                    // The prayer we are counting down to: bold, and the same accent once it is soon.
+                    cells[i].setTypeface(cells[i].getTypeface(), android.graphics.Typeface.BOLD);
+                    cells[i].setTextColor(soon ? 0xFFE8A33D : 0xFFFFFFFF);
+                } else if (entry.time.isBefore(now)) {
+                    // Already passed today: dimmed, same treatment Imsak and Syuruk get once behind us.
+                    cells[i].setTypeface(cells[i].getTypeface(), android.graphics.Typeface.NORMAL);
+                    cells[i].setTextColor(0x66FFFFFF);
+                } else {
+                    cells[i].setTypeface(cells[i].getTypeface(), android.graphics.Typeface.NORMAL);
+                    cells[i].setTextColor(0xD9FFFFFF);
+                }
+            }
+        }
+        prayerPanel.setVisibility(View.VISIBLE);
+    }
+
+    // ---- Public Holidays panel (Johor, Selangor) -----------------------------------------------------
+
+    /** Shows or hides the Public Holidays panel for this minute, same as the prayer and race panels:
+     *  text only, the underlying data is a cache lookup, no network on this call. */
+    private void updateHolidayPanel() {
+        if (holidayPanel == null) return;
+        Holidays.Holiday todayHoliday = Holidays.today();
+        Holidays.Holiday nextHoliday = Holidays.next();
+        List<Holidays.Holiday> monthList = Holidays.thisAndNextMonth();
+        if (todayHoliday == null && nextHoliday == null && monthList.isEmpty()) {
+            holidayPanel.setVisibility(View.GONE);
+            return;
+        }
+        java.time.format.DateTimeFormatter shortDate = java.time.format.DateTimeFormatter.ofPattern("d MMM", Locale.getDefault());
+        if (todayHoliday != null) {
+            holidayHeadline.setText(getString(R.string.holiday_today, todayHoliday.name));
+        } else if (nextHoliday != null) {
+            holidayHeadline.setText(getString(R.string.holiday_next, nextHoliday.name, shortDate.format(nextHoliday.date)));
+        } else {
+            holidayHeadline.setText(R.string.holiday_none);
+        }
+        StringBuilder sb = new StringBuilder();
+        for (Holidays.Holiday h : monthList) {
+            if (sb.length() > 0) sb.append('\n');
+            sb.append(getString(R.string.holiday_list_line, shortDate.format(h.date), h.name));
+        }
+        holidayList.setText(sb.toString());
+        holidayList.setVisibility(sb.length() > 0 ? View.VISIBLE : View.GONE);
+        holidayPanel.setVisibility(View.VISIBLE);
+    }
+
+    // ---- Continue Watching row (Netflix, YouTube, Disney+ only) -------------------------------------
+
+    /** Builds the Continue Watching row once, from Home's onCreate. Decorative, not focusable: Up/Down
+     *  between the header and the dock skip straight over it. */
+    private void showWatchNext(List<WatchNext.Entry> entries) {
+        if (entries.isEmpty()) {
+            watchNextScroll.setVisibility(View.GONE);
+            return;
+        }
+        watchNextRow.removeAllViews();
+        int posterW = (int) (168 * density), posterH = (int) (94 * density);
+        int radius = (int) (10 * density);
+        for (WatchNext.Entry entry : entries) {
+            LinearLayout card = new LinearLayout(this);
+            card.setOrientation(LinearLayout.VERTICAL);
+            LinearLayout.LayoutParams cardLp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            cardLp.setMarginEnd((int) (16 * density));
+            card.setLayoutParams(cardLp);
+
+            FrameLayout posterFrame = new FrameLayout(this);
+            posterFrame.setLayoutParams(new LinearLayout.LayoutParams(posterW, posterH));
+            posterFrame.setBackgroundColor(0x1AFFFFFF);
+            posterFrame.setOutlineProvider(new android.view.ViewOutlineProvider() {
+                @Override
+                public void getOutline(View view, android.graphics.Outline outline) {
+                    outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), radius);
+                }
+            });
+            posterFrame.setClipToOutline(true);
+
+            ImageView poster = new ImageView(this);
+            poster.setLayoutParams(new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+            poster.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            posterFrame.addView(poster);
+            WatchNext.loadPoster(this, entry.posterUri, bitmap -> {
+                if (bitmap != null) poster.setImageBitmap(bitmap);
+            });
+
+            if (entry.progress >= 0) {
+                View track = new View(this);
+                FrameLayout.LayoutParams trackLp = new FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.MATCH_PARENT, (int) (3 * density));
+                trackLp.gravity = android.view.Gravity.BOTTOM;
+                track.setLayoutParams(trackLp);
+                track.setBackgroundColor(0x4D000000);
+                posterFrame.addView(track);
+
+                View fill = new View(this);
+                FrameLayout.LayoutParams fillLp = new FrameLayout.LayoutParams(
+                        Math.max(1, posterW * entry.progress / 100), (int) (3 * density));
+                fillLp.gravity = android.view.Gravity.BOTTOM | android.view.Gravity.START;
+                fill.setLayoutParams(fillLp);
+                fill.setBackgroundColor(0xFFE8A33D);
+                posterFrame.addView(fill);
+            }
+
+            card.addView(posterFrame);
+
+            TextView title = new TextView(this);
+            LinearLayout.LayoutParams titleLp = new LinearLayout.LayoutParams(
+                    posterW, LinearLayout.LayoutParams.WRAP_CONTENT);
+            titleLp.topMargin = (int) (6 * density);
+            title.setLayoutParams(titleLp);
+            title.setText(entry.title);
+            title.setSingleLine(true);
+            title.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            title.setTextColor(0xB3FFFFFF);
+            title.setTextSize(12f);
+
+            card.addView(title);
+            watchNextRow.addView(card);
+        }
+        watchNextScroll.setVisibility(View.VISIBLE);
     }
 
     private void refreshPillsAfterNextDraw() {

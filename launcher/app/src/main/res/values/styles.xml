@@ -53,4 +53,37 @@
         <item name="android:layout_marginEnd">10dp</item>
         <item name="android:gravity">center</item>
     </style>
+
+    <!-- Waktu Solat table (prayerTable): an icon over a label over a time, one column per prayer. -->
+    <style name="PrayerColumnIcon">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:layout_marginBottom">2dp</item>
+    </style>
+    <style name="PrayerColumnLabel">
+        <item name="android:singleLine">true</item>
+        <item name="android:textColor">#8CFFFFFF</item>
+        <item name="android:textSize">11sp</item>
+        <item name="android:fontFamily">@font/outfit_medium</item>
+        <item name="android:letterSpacing">0.06</item>
+    </style>
+    <style name="PrayerColumnTime">
+        <item name="android:layout_marginTop">2dp</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:textColor">#D9FFFFFF</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:fontFamily">@font/outfit_regular</item>
+        <item name="android:letterSpacing">0.02</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+    <style name="PrayerColumnDivider">
+        <item name="android:layout_width">1dp</item>
+        <item name="android:layout_height">26dp</item>
+        <item name="android:layout_gravity">center_vertical</item>
+        <item name="android:layout_marginStart">14dp</item>
+        <item name="android:layout_marginEnd">14dp</item>
+        <item name="android:background">#26FFFFFF</item>
+    </style>
 </resources>

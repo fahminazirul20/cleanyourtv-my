@@ -12,6 +12,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /** Remote-friendly settings owned by the launcher; system settings stay one row away. */
@@ -20,6 +22,18 @@ public final class LauncherSettingsActivity extends Activity {
     private final TextView[] columnChoices = new TextView[4];
     private final TextView[] rowChoices = new TextView[4];
     private TextView wallpaperChoice;
+    private TextView prayerZoneChoice;
+    private String prayerZone;
+    private TextView holidayStatesChoice;
+
+    /** Display label, mycal-api slug: the 16 states/territories the Public Holidays picker offers. */
+    private static final String[][] HOLIDAY_STATES = {
+            {"Johor", "johor"}, {"Kedah", "kedah"}, {"Kelantan", "kelantan"}, {"Melaka", "melaka"},
+            {"Negeri Sembilan", "negeri-sembilan"}, {"Pahang", "pahang"}, {"Perak", "perak"},
+            {"Perlis", "perlis"}, {"Pulau Pinang", "pulau-pinang"}, {"Sabah", "sabah"},
+            {"Sarawak", "sarawak"}, {"Selangor", "selangor"}, {"Terengganu", "terengganu"},
+            {"Kuala Lumpur", "kuala-lumpur"}, {"Putrajaya", "wp-putrajaya"}, {"Labuan", "wp-labuan"},
+    };
     private TextView animationsChoice;
     private TextView advancedChoice;
     private TextView followThemeChoice;
@@ -38,6 +52,7 @@ public final class LauncherSettingsActivity extends Activity {
         rowsBelowDock = config.rowsBelowDock;
         animations = config.animations;
         advancedEffects = config.animations && config.advancedEffects;
+        prayerZone = config.prayerZone;
 
         int[] ids = {R.id.columns4, R.id.columns5, R.id.columns6, R.id.columns7};
         for (int i = 0; i < ids.length; i++) {
@@ -71,6 +86,10 @@ public final class LauncherSettingsActivity extends Activity {
         }
         wallpaperChoice = findViewById(R.id.wallpaperChoice);
         wallpaperChoice.setOnClickListener(v -> showWallpaperPicker());
+        prayerZoneChoice = findViewById(R.id.prayerZoneChoice);
+        prayerZoneChoice.setOnClickListener(v -> showPrayerZonePicker());
+        holidayStatesChoice = findViewById(R.id.holidayStatesChoice);
+        holidayStatesChoice.setOnClickListener(v -> showHolidayStatesPicker());
         animationsChoice = findViewById(R.id.animationsChoice);
         animationsChoice.setOnClickListener(v -> {
             animations = !animations;
@@ -158,6 +177,93 @@ public final class LauncherSettingsActivity extends Activity {
                 .show();
     }
 
+    private void showPrayerZonePicker() {
+        List<JakimZones.Zone> zones = JakimZones.all();
+        String[] labels = new String[zones.size()];
+        int checked = -1;
+        for (int i = 0; i < zones.size(); i++) {
+            JakimZones.Zone z = zones.get(i);
+            labels[i] = z.state + " — " + z.district + " (" + z.code + ")";
+            if (z.code.equals(prayerZone)) checked = i;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.prayer_zone_setting)
+                .setSingleChoiceItems(labels, checked, (dialog, which) -> {
+                    dialog.dismiss();
+                    prayerZone = zones.get(which).code;
+                    choices.edit().putString("prayer_zone", prayerZone).apply();
+                    setResult(RESULT_OK);
+                    refresh();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private String holidayStatesSummary() {
+        if (!choices.contains("holiday_states")) return getString(R.string.holiday_states_auto);
+        String stored = choices.getString("holiday_states", "");
+        if (stored.isEmpty()) return getString(R.string.holiday_states_all);
+        List<String> names = new ArrayList<>();
+        for (String slug : stored.split(",")) {
+            for (String[] s : HOLIDAY_STATES) if (s[1].equals(slug)) names.add(s[0]);
+        }
+        return String.join(", ", names);
+    }
+
+    private void showHolidayStatesPicker() {
+        String stored = choices.getString("holiday_states", null);
+        boolean configured = choices.contains("holiday_states");
+        List<String> current = configured ? Arrays.asList(stored.split(",", -1)) : java.util.Collections.emptyList();
+        boolean allMode = configured && stored.isEmpty();
+
+        String[] labels = new String[HOLIDAY_STATES.length + 1];
+        boolean[] checked = new boolean[HOLIDAY_STATES.length + 1];
+        labels[0] = getString(R.string.holiday_states_all);
+        checked[0] = allMode;
+        for (int i = 0; i < HOLIDAY_STATES.length; i++) {
+            labels[i + 1] = HOLIDAY_STATES[i][0];
+            checked[i + 1] = !allMode && current.contains(HOLIDAY_STATES[i][1]);
+        }
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle(R.string.holiday_states_setting)
+                .setMultiChoiceItems(labels, checked, null)
+                .setPositiveButton(android.R.string.ok, (d, which) -> {
+                    android.widget.ListView list = ((AlertDialog) d).getListView();
+                    boolean malaysiaChecked = list.isItemChecked(0);
+                    List<String> picked = new ArrayList<>();
+                    if (!malaysiaChecked) {
+                        for (int i = 0; i < HOLIDAY_STATES.length; i++) {
+                            if (list.isItemChecked(i + 1)) picked.add(HOLIDAY_STATES[i][1]);
+                        }
+                    }
+                    choices.edit().putString("holiday_states",
+                            malaysiaChecked ? "" : String.join(",", picked)).apply();
+                    setResult(RESULT_OK);
+                    refresh();
+                })
+                .setNeutralButton(R.string.holiday_states_auto, (d, which) -> {
+                    choices.edit().remove("holiday_states").apply();
+                    setResult(RESULT_OK);
+                    refresh();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .create();
+        dialog.show();
+        // Checking "Malaysia" clears and locks out the individual states, and checking any state
+        // un-checks "Malaysia": the two are mutually exclusive, enforced live as the owner picks.
+        android.widget.ListView list = dialog.getListView();
+        list.setOnItemClickListener((parent, view, position, id) -> {
+            if (position == 0) {
+                if (list.isItemChecked(0)) {
+                    for (int i = 1; i <= HOLIDAY_STATES.length; i++) list.setItemChecked(i, false);
+                }
+            } else if (list.isItemChecked(position)) {
+                list.setItemChecked(0, false);
+            }
+        });
+    }
+
     private static int indexOf(List<File> images, String name) {
         if (name == null) return -1;
         for (int i = 0; i < images.size(); i++) {
@@ -191,6 +297,10 @@ public final class LauncherSettingsActivity extends Activity {
                 "none".equals(wallpaperCurrent) ? getString(R.string.wallpaper_none)
                         : wallpaperCurrent != null ? wallpaperCurrent
                         : getString(R.string.wallpaper_theme_default)));
+        JakimZones.Zone zone = JakimZones.byCode(prayerZone);
+        prayerZoneChoice.setText(getString(R.string.prayer_zone_setting_state,
+                zone != null ? zone.state + " (" + zone.code + ")" : prayerZone));
+        holidayStatesChoice.setText(getString(R.string.holiday_states_setting_state, holidayStatesSummary()));
         followThemeChoice.setSelected(!hasOnTvChoices());
     }
 

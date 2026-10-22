@@ -272,6 +272,285 @@
                             android:textAllCaps="true" />
                     </LinearLayout>
                 </LinearLayout>
+            </LinearLayout>
+
+            <!-- Waktu Solat and Public Holidays cards, side by side: below leftBlock (not inside it) so
+                 they can use the header's full width, not just the width left after topButtons. -->
+            <LinearLayout
+                android:id="@+id/cardsRow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/leftBlock"
+                android:layout_alignStart="@id/leftBlock"
+                android:layout_marginTop="16dp"
+                android:orientation="horizontal">
+
+                <!-- Waktu Solat card (config.xml show_prayer_card / prayer_zone): next prayer and a
+                     countdown. Gone until the first fetch lands. -->
+                <LinearLayout
+                    android:id="@+id/prayerPanel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:background="@drawable/glass_panel"
+                    android:paddingStart="20dp"
+                    android:paddingEnd="24dp"
+                    android:paddingTop="14dp"
+                    android:paddingBottom="16dp"
+                    android:focusable="false"
+                    android:importantForAccessibility="no"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/prayerZoneLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:singleLine="true"
+                        android:textColor="#8CFFFFFF"
+                        android:textSize="12sp"
+                        android:fontFamily="@font/outfit_medium"
+                        android:letterSpacing="0.22"
+                        android:textAllCaps="true" />
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:id="@+id/prayerNext"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:singleLine="true"
+                            android:textColor="#FFFFFFFF"
+                            android:textSize="17sp"
+                            android:fontFamily="@font/outfit_medium"
+                            android:letterSpacing="0.02"
+                            android:includeFontPadding="false" />
+
+                        <TextView
+                            android:id="@+id/prayerHijri"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="14dp"
+                            android:singleLine="true"
+                            android:textColor="#8CFFFFFF"
+                            android:textSize="13sp"
+                            android:fontFamily="@font/outfit_regular"
+                            android:letterSpacing="0.02"
+                            android:includeFontPadding="false" />
+                    </LinearLayout>
+
+                    <!-- Today's six times, Imsak to Isyak: a label over a time, one column each. -->
+                    <LinearLayout
+                        android:id="@+id/prayerTable"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+                            <TextView
+                                android:text="🌙"
+                                style="@style/PrayerColumnIcon" />
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Imsak"
+                                style="@style/PrayerColumnLabel" />
+                            <TextView
+                                android:id="@+id/prayerTimeImsak"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                style="@style/PrayerColumnTime" />
+                        </LinearLayout>
+
+                        <View style="@style/PrayerColumnDivider" />
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+                            <TextView
+                                android:text="🌄"
+                                style="@style/PrayerColumnIcon" />
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Subuh"
+                                style="@style/PrayerColumnLabel" />
+                            <TextView
+                                android:id="@+id/prayerTimeSubuh"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                style="@style/PrayerColumnTime" />
+                        </LinearLayout>
+
+                        <View style="@style/PrayerColumnDivider" />
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+                            <TextView
+                                android:text="🌅"
+                                style="@style/PrayerColumnIcon" />
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Syuruk"
+                                style="@style/PrayerColumnLabel" />
+                            <TextView
+                                android:id="@+id/prayerTimeSyuruk"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                style="@style/PrayerColumnTime" />
+                        </LinearLayout>
+
+                        <View style="@style/PrayerColumnDivider" />
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+                            <TextView
+                                android:text="☀️"
+                                style="@style/PrayerColumnIcon" />
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Zohor"
+                                style="@style/PrayerColumnLabel" />
+                            <TextView
+                                android:id="@+id/prayerTimeZohor"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                style="@style/PrayerColumnTime" />
+                        </LinearLayout>
+
+                        <View style="@style/PrayerColumnDivider" />
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+                            <TextView
+                                android:text="⛅"
+                                style="@style/PrayerColumnIcon" />
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Asar"
+                                style="@style/PrayerColumnLabel" />
+                            <TextView
+                                android:id="@+id/prayerTimeAsar"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                style="@style/PrayerColumnTime" />
+                        </LinearLayout>
+
+                        <View style="@style/PrayerColumnDivider" />
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+                            <TextView
+                                android:text="🌇"
+                                style="@style/PrayerColumnIcon" />
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Maghrib"
+                                style="@style/PrayerColumnLabel" />
+                            <TextView
+                                android:id="@+id/prayerTimeMaghrib"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                style="@style/PrayerColumnTime" />
+                        </LinearLayout>
+
+                        <View style="@style/PrayerColumnDivider" />
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+                            <TextView
+                                android:text="✨"
+                                style="@style/PrayerColumnIcon" />
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Isyak"
+                                style="@style/PrayerColumnLabel" />
+                            <TextView
+                                android:id="@+id/prayerTimeIsyak"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                style="@style/PrayerColumnTime" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Public Holidays card (Johor, Selangor): today's status, the next one, and the rest
+                     of this month and next month. Gone until the first fetch lands. -->
+                <LinearLayout
+                    android:id="@+id/holidayPanel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="14dp"
+                    android:orientation="vertical"
+                    android:background="@drawable/glass_panel"
+                    android:paddingStart="20dp"
+                    android:paddingEnd="24dp"
+                    android:paddingTop="14dp"
+                    android:paddingBottom="16dp"
+                    android:focusable="false"
+                    android:importantForAccessibility="no"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/holidayLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/holiday_label"
+                        android:singleLine="true"
+                        android:textColor="#8CFFFFFF"
+                        android:textSize="12sp"
+                        android:fontFamily="@font/outfit_medium"
+                        android:letterSpacing="0.22"
+                        android:textAllCaps="true" />
+
+                    <TextView
+                        android:id="@+id/holidayHeadline"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:singleLine="true"
+                        android:textColor="#FFFFFFFF"
+                        android:textSize="17sp"
+                        android:fontFamily="@font/outfit_medium"
+                        android:letterSpacing="0.02"
+                        android:includeFontPadding="false" />
+
+                    <TextView
+                        android:id="@+id/holidayList"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:textColor="#B3FFFFFF"
+                        android:textSize="13sp"
+                        android:lineSpacingExtra="4dp"
+                        android:fontFamily="@font/outfit_regular"
+                        android:letterSpacing="0.02"
+                        android:includeFontPadding="false" />
+                </LinearLayout>
 
             </LinearLayout>
 
@@ -299,8 +578,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentEnd="true"
-                android:layout_alignBottom="@id/leftBlock"
-                android:layout_marginBottom="6dp"
+                android:layout_alignTop="@id/leftBlock"
+                android:layout_marginTop="20dp"
                 android:clipChildren="false"
                 android:clipToPadding="false"
                 android:orientation="horizontal">
@@ -344,6 +623,27 @@
                     android:drawableStart="@drawable/ic_settings"
                     android:nextFocusDown="@+id/grid" />
             </LinearLayout>
+
+            <!-- Continue Watching (Netflix, YouTube, Disney+ only): posters from Android's Watch Next
+                 provider, decorative like the race and prayer panels, not focusable. Below leftBlock so
+                 it can use the header's full width; gone until there is at least one entry. -->
+            <HorizontalScrollView
+                android:id="@+id/watchNextScroll"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/cardsRow"
+                android:layout_marginTop="18dp"
+                android:scrollbars="none"
+                android:focusable="false"
+                android:importantForAccessibility="no"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:id="@+id/watchNextRow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal" />
+            </HorizontalScrollView>
         </RelativeLayout>
 
         <!-- The wrapper clips at the grid's edge; the grid itself must not clip so scaled tiles can overflow their cells. -->
