@@ -98,6 +98,26 @@ is ignored, and a file that doesn't parse is ignored as a whole, so a theme can 
 | `dock_glass` | bool | The dock band as light frosted glass like the top bar's pills (`false` by default); suits `sky_intensity` or a wallpaper, where the solid band reads as a dark slab |
 | `ambient_glow` | bool | The glow behind the dock in the focused app's colour (`true` by default); `false` keeps only `background_color` or the wallpaper, e.g. for a calm photo background |
 | `app_glow` | bool | The focus highlight glows in the focused app's colour on every tile, as `cinematic_home` does for the dock (`false` by default) |
+| `show_prayer_card` | bool | Waktu Solat (Malaysia prayer times) card under the clock: next prayer, a countdown and a 7-column table, from api.waktusolat.app (`true` by default) |
+| `prayer_zone` | string | JAKIM zone code the Waktu Solat card and screensaver read, e.g. `JHR02`; see `JakimZones.java` for the full list |
+| `extra_holiday_states` | comma list of mycal-api state slugs | Extra states for the Public Holidays card beyond the Prayer zone's own state, e.g. `selangor,kuala-lumpur` |
+| `azan_enabled` | bool | A full-screen azan (adhan) alert at each of the five daily prayer times, with audio from `azan_subuh.mp3` / `azan_other.mp3` (see Azan below); `false` by default |
+
+## Azan
+
+`azan_enabled: true` needs `show_prayer_card` and a `prayer_zone` to compute a schedule from. Three
+files beside `config.json`, each optional on its own:
+
+| File | Shown |
+|---|---|
+| `azan_subuh.mp3` | Played for Subuh |
+| `azan_other.mp3` | Played for Zohor, Asar, Maghrib and Isyak |
+| `azan_wallpaper.jpg` | Behind the alert; a plain dark screen without it |
+
+A missing audio file still shows the full-screen alert, silently. `tools/theme.sh` pushes and removes
+these the same way it does `wallpaper.jpg`. Back on the remote cancels an alert early; it also ends on
+its own once the audio finishes, or stops if something else comes to the front first (another app,
+Home, the alert itself being replaced by a later one).
 
 ## Wallpapers
 

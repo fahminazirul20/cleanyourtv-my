@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Azan takeover (AzanActivity): the Mecca wallpaper (azan_wallpaper.jpg, pushed by tools/theme.sh)
+     behind a dark scrim, the prayer's name centred, audio played separately in code. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FF000000">
+
+    <ImageView
+        android:id="@+id/azanWallpaper"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#99000000" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:orientation="vertical"
+        android:gravity="center_horizontal">
+
+        <TextView
+            android:id="@+id/azanPrayerName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#FFFFFFFF"
+            android:textSize="64sp"
+            android:fontFamily="@font/outfit_medium"
+            android:letterSpacing="0.02"
+            android:includeFontPadding="false" />
+
+        <TextView
+            android:id="@+id/azanNow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:textColor="#CCFFFFFF"
+            android:textSize="22sp"
+            android:fontFamily="@font/outfit_regular"
+            android:letterSpacing="0.1" />
+    </LinearLayout>
+</FrameLayout>

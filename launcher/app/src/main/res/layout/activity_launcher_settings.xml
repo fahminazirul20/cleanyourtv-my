@@ -77,6 +77,11 @@
             android:layout_marginTop="10dp" />
 
         <TextView
+            android:id="@+id/azanChoice"
+            style="@style/SettingsRow"
+            android:layout_marginTop="10dp" />
+
+        <TextView
             android:id="@+id/animationsChoice"
             style="@style/SettingsRow"
             android:layout_marginTop="28dp" />

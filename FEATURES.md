@@ -4,8 +4,8 @@ This is a fork of [Gathin23/cleanyourtv](https://github.com/Gathin23/cleanyourtv
 see [LICENSE](LICENSE)). Everything in the base project (debloat, the launcher, themes, tools)
 works as documented in the main [README.md](README.md). This file covers only what was added on
 top, for a Malaysia-focused Android TV setup: a prayer-times card, a public-holidays card, a
-Continue Watching row, a cinematic per-app backdrop, and a prayer-times screensaver — all
-configurable per TV, not hardcoded to one state.
+Continue Watching row, a cinematic per-app backdrop, a prayer-times screensaver, and a full-screen
+azan (adhan) alert at each prayer time — all configurable per TV, not hardcoded to one state.
 
 **Important: installing the launcher APK does not debloat the TV.** They are two separate steps.
 The APK only replaces Home with this launcher. Debloating (disabling the manufacturer's telemetry,
@@ -87,11 +87,36 @@ changes without eating the vertical space other app rows need). Deliberately **n
 artwork — using the app's own already-installed icon avoids any copyright question around bundling
 or fetching official promotional art.
 
+## 5. Azan (adhan) alert
+
+A full-screen takeover at each of the five daily prayer times (Subuh, Zohor, Asar, Maghrib, Isyak —
+not Imsak or Syuruk, which have no azan): the Mecca wallpaper behind the prayer's name, playing
+`azan_subuh.mp3` for Subuh or `azan_other.mp3` for the other four. It comes forward over whatever is
+on screen, app included, the same way an incoming call would. **Back on the remote cancels it early**;
+it also ends on its own once the audio finishes, or if something else comes to the front first.
+
+- **Audio and wallpaper are not bundled in the APK.** Like `wallpaper.jpg`, they live in the
+  launcher's external files dir and are pushed with `tools/theme.sh` (now pushes `azan_subuh.mp3`,
+  `azan_other.mp3` and `azan_wallpaper.jpg` from a theme folder alongside `config.json`, the same way
+  it already does `wallpaper.jpg`). Keeps the APK small and avoids bundling audio with licensing or
+  size questions of its own; see `themes/README.md`'s Azan section for the three filenames. A missing
+  audio file still shows the alert, silently.
+- **Scheduling**: `AzanManager` arms one exact `AlarmManager` alarm for the next prayer, computed
+  from whatever `PrayerTimes` already has cached — no extra network call. Re-armed after every alert
+  (`AzanReceiver`), after a reboot (`AzanBootReceiver`), and whenever prayer data refreshes or the
+  setting is flipped. Falls back to an inexact alarm (within a few minutes) on a TV running Android
+  12-13 without the exact-alarm permission granted; Android 14+ gets it automatically on a sideloaded
+  build.
+- **Off by default** (`azan_enabled` in `config.xml` or a theme) and needs `show_prayer_card` +
+  `prayer_zone` for a schedule to compute from. Toggle it per TV from Launcher settings → Azan.
+- **Code**: `AzanManager.java`, `AzanReceiver.java`, `AzanBootReceiver.java`, `AzanActivity.java`.
+
 ## Settings summary (Launcher settings, hold OK on the Settings pill)
 
 | Row | What it does |
 |---|---|
 | Prayer zone | Pick your JAKIM zone from all 60; sets the Waktu Solat card and screensaver |
+| Azan | On/off for the full-screen adhan alert at each of the five daily prayer times |
 | Public holiday states | Multi-select states for the Holidays card, or "Malaysia (all states)" |
 | (existing rows: Apps per row, Edit dock, Wallpaper, Animations, …) | Unchanged from the base project |
 

@@ -63,6 +63,9 @@
     <!-- The row's own label on the settings screen. %1$s is "Malaysia (all states)", "Auto", or a
          comma list of state names. -->
     <string name="holiday_states_setting_state">Public holidays: %1$s</string>
+    <!-- Launcher settings: toggles the azan alert (AzanManager/AzanActivity). -->
+    <string name="azan_setting_state">Azan: %1$s</string>
+    <string name="azan_now">%1$s has begun</string>
     <string name="wallpaper_none">None</string>
     <string name="wallpaper_applied">Wallpaper changed</string>
     <string name="wallpaper_theme_default">Theme default</string>

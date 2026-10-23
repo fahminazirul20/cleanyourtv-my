@@ -20,6 +20,15 @@
          this permission (protection level normal, so it is granted at install). Ignored on other TVs. -->
     <uses-permission android:name="yandex.tv.permission.ACCESS_TV_SOURCE" />
 
+    <!-- Azan alert only (azan_enabled): AzanManager schedules one exact alarm per prayer; re-armed
+         after a reboot by AzanBootReceiver. SCHEDULE_EXACT_ALARM needs a user grant on Android 12-13
+         (AzanManager falls back to an inexact alarm without it); USE_EXACT_ALARM (Android 14+) is
+         granted automatically to a sideloaded build. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
     <!-- Android 11+ package visibility: lets the launcher list the TV apps it shows as tiles, and the
          apps that declare a module card (docs/specs/card.md). -->
     <queries>
@@ -174,6 +183,25 @@
             android:authorities="${applicationId}.theme"
             android:exported="true"
             android:permission="android.permission.WRITE_SECURE_SETTINGS" />
+
+        <!-- Azan takeover (azan_enabled): full screen, over the lock screen, audio from the external
+             files dir. Its own task so it comes forward over whatever app is open. -->
+        <activity
+            android:name=".AzanActivity"
+            android:exported="false"
+            android:taskAffinity=""
+            android:launchMode="singleTop"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:screenOrientation="landscape"
+            android:showOnLockScreen="true"
+            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen" />
+        <receiver android:name=".AzanReceiver" android:exported="false" />
+        <receiver android:name=".AzanBootReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
 
         <!-- The remote's Input button (KEYCODE_TV or KEYCODE_TV_INPUT) opens the input switcher, and input_key_keycodes and
          app_keys (config.xml or a theme) bring back other remote buttons; see InputKeyService. -->

@@ -34,6 +34,8 @@ public final class LauncherSettingsActivity extends Activity {
             {"Sarawak", "sarawak"}, {"Selangor", "selangor"}, {"Terengganu", "terengganu"},
             {"Kuala Lumpur", "kuala-lumpur"}, {"Putrajaya", "wp-putrajaya"}, {"Labuan", "wp-labuan"},
     };
+    private TextView azanChoice;
+    private boolean azanEnabled;
     private TextView animationsChoice;
     private TextView advancedChoice;
     private TextView followThemeChoice;
@@ -53,6 +55,7 @@ public final class LauncherSettingsActivity extends Activity {
         animations = config.animations;
         advancedEffects = config.animations && config.advancedEffects;
         prayerZone = config.prayerZone;
+        azanEnabled = config.azanEnabled;
 
         int[] ids = {R.id.columns4, R.id.columns5, R.id.columns6, R.id.columns7};
         for (int i = 0; i < ids.length; i++) {
@@ -90,6 +93,14 @@ public final class LauncherSettingsActivity extends Activity {
         prayerZoneChoice.setOnClickListener(v -> showPrayerZonePicker());
         holidayStatesChoice = findViewById(R.id.holidayStatesChoice);
         holidayStatesChoice.setOnClickListener(v -> showHolidayStatesPicker());
+        azanChoice = findViewById(R.id.azanChoice);
+        azanChoice.setOnClickListener(v -> {
+            azanEnabled = !azanEnabled;
+            choices.edit().putBoolean("azan_enabled", azanEnabled).apply();
+            AzanManager.scheduleNext(this);
+            setResult(RESULT_OK);
+            refresh();
+        });
         animationsChoice = findViewById(R.id.animationsChoice);
         animationsChoice.setOnClickListener(v -> {
             animations = !animations;
@@ -301,6 +312,8 @@ public final class LauncherSettingsActivity extends Activity {
         prayerZoneChoice.setText(getString(R.string.prayer_zone_setting_state,
                 zone != null ? zone.state + " (" + zone.code + ")" : prayerZone));
         holidayStatesChoice.setText(getString(R.string.holiday_states_setting_state, holidayStatesSummary()));
+        azanChoice.setText(getString(R.string.azan_setting_state,
+                getString(azanEnabled ? R.string.on : R.string.off)));
         followThemeChoice.setSelected(!hasOnTvChoices());
     }
 

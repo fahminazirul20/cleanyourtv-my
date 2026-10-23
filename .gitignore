@@ -17,3 +17,9 @@ work/
 *.aab
 launcher/hs_err_pid*.log
 launcher/replay_pid*.log
+
+# Azan audio/wallpaper: someone else's recitation and photo, not ours to publish; pushed straight
+# to the TV with tools/theme.sh and never need to be in git. See themes/README.md's Azan section.
+themes/*/azan_subuh.mp3
+themes/*/azan_other.mp3
+themes/*/azan_wallpaper.jpg

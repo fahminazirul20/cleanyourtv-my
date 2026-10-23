@@ -18,6 +18,8 @@ final class ThemeFiles {
         if (segments.size() == 1) {
             String name = segments.get(0);
             return Config.FILE_NAME.equals(name) || "wallpaper.jpg".equals(name) || "theme_revision".equals(name)
+                    || "azan_subuh.mp3".equals(name) || "azan_other.mp3".equals(name)
+                    || "azan_wallpaper.jpg".equals(name)
                     ? name : null;
         }
         if (segments.size() == 2 && WALLPAPERS.equals(segments.get(0))

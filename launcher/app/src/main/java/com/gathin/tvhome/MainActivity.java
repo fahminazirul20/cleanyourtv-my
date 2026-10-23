@@ -441,7 +441,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         prayerTimeMaghrib = findViewById(R.id.prayerTimeMaghrib);
         prayerTimeIsyak = findViewById(R.id.prayerTimeIsyak);
         if (showPrayerCard) {
-            PrayerTimes.refreshIfNeeded(this, prayerZone, this::updatePrayerPanel);
+            PrayerTimes.refreshIfNeeded(this, prayerZone, () -> {
+                updatePrayerPanel();
+                AzanManager.scheduleNext(this);
+            });
         }
         watchNextScroll = findViewById(R.id.watchNextScroll);
         watchNextRow = findViewById(R.id.watchNextRow);

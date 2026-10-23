@@ -167,6 +167,8 @@ final class Config {
     /** Extra mycal-api state slugs for the Public Holidays card, beyond the Prayer zone's own state
      *  (config.xml, extra_holiday_states). Empty unless config or a theme sets it. */
     final List<String> extraHolidayStates;
+    /** Azan alert at each of the five daily prayer times (config.xml, azan_enabled); see AzanManager. */
+    final boolean azanEnabled;
 
     private Config(List<String> dockApps, boolean fillDock, List<String> hiddenApps, String liveTvPackage,
                    String liveTvAction, String liveTvInputId, Map<String, String> launchActions, Map<String, String> appLabels,
@@ -180,7 +182,8 @@ final class Config {
                    Festival festival, int[] inputKeycodes, List<String> appKeys, String stockHomeRedirect,
                    List<RaceWeekend.Race> raceCalendar, boolean cinematicHome, boolean ambientGlow, boolean appGlow, int homeIdleClockMinutes,
                    boolean keyFilter, boolean dockGlass, String glowStyle, boolean wallpaperCaptions,
-                   boolean handleViewInputs, boolean showPrayerCard, String prayerZone, List<String> extraHolidayStates) {
+                   boolean handleViewInputs, boolean showPrayerCard, String prayerZone, List<String> extraHolidayStates,
+                   boolean azanEnabled) {
         this.handleViewInputs = handleViewInputs;
         this.inputKeycodes = inputKeycodes;
         this.appKeys = Collections.unmodifiableList(appKeys);
@@ -249,6 +252,7 @@ final class Config {
         this.showPrayerCard = showPrayerCard;
         this.prayerZone = prayerZone;
         this.extraHolidayStates = Collections.unmodifiableList(extraHolidayStates);
+        this.azanEnabled = azanEnabled;
     }
 
     /** A known glow_style, or radial (the default) for anything else. */
@@ -306,6 +310,7 @@ final class Config {
         boolean showPrayerCard = res.getBoolean(R.bool.show_prayer_card);
         String prayerZone = res.getString(R.string.prayer_zone).trim();
         List<String> extraHolidayStates = splitCsv(res.getString(R.string.extra_holiday_states));
+        boolean azanEnabled = res.getBoolean(R.bool.azan_enabled);
         int background = 0xFF000000;
         int skyIntensity = res.getInteger(R.integer.sky_intensity);
         int[] settingsKeycodes = res.getIntArray(R.array.settings_key_keycodes);
@@ -374,6 +379,7 @@ final class Config {
             if (json.has("extra_holiday_states")) {
                 extraHolidayStates = splitCsv(string(json, "extra_holiday_states", ""));
             }
+            azanEnabled = bool(json, "azan_enabled", azanEnabled);
             background = color(json, "background_color", background);
             skyIntensity = integer(json, "sky_intensity", skyIntensity, 0, 100);
             settingsKeycodes = intArray(json, "settings_key_keycodes", settingsKeycodes);
@@ -402,6 +408,7 @@ final class Config {
         animations = choices.getBoolean("animations", animations);
         advancedEffects = choices.getBoolean("advanced_effects", advancedEffects);
         prayerZone = choices.getString("prayer_zone", prayerZone);
+        azanEnabled = choices.getBoolean("azan_enabled", azanEnabled);
         File wallpaper = dir != null ? new File(dir, WALLPAPER_NAME) : null;
         if (wallpaper != null && !(wallpaper.isFile() && wallpaper.length() > 0)) wallpaper = null;
         // A theme can also switch the wallpaper off while the file is still there.
@@ -451,7 +458,7 @@ final class Config {
                 wallpapers, rotationMinutes, wallpaperDim, dockOpacity, wallpaperOrder, applied,
                 festival, inputKeycodes, appKeys, stockHomeRedirect, json == null ? Collections.emptyList() : raceCalendar(json), cinematic, ambientGlow, appGlow,
                 Math.max(0, idleClockMinutes), keyFilter, dockGlass, glowStyle, wallpaperCaptions,
-                handleViewInputs, showPrayerCard, prayerZone, extraHolidayStates);
+                handleViewInputs, showPrayerCard, prayerZone, extraHolidayStates, azanEnabled);
     }
 
     /**

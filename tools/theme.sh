@@ -59,7 +59,7 @@ put() { echo "rm -f $DIR/$1 2>/dev/null; content write --uri $URI/$1 < $(stage "
 del() { echo "rm -f $DIR/$1 2>/dev/null; content delete --uri $URI/$1 2>/dev/null"; }
 
 if [ "${1:-}" = --reset ]; then
-  tv "mkdir -p $DIR 2>/dev/null; $(del config.json); $(del wallpaper.jpg); printf '%s' '$REVISION' > $TMP-theme_revision; $(put theme_revision); $RESTART; echo reset" | tail -n 1
+  tv "mkdir -p $DIR 2>/dev/null; $(del config.json); $(del wallpaper.jpg); $(del azan_subuh.mp3); $(del azan_other.mp3); $(del azan_wallpaper.jpg); printf '%s' '$REVISION' > $TMP-theme_revision; $(put theme_revision); $RESTART; echo reset" | tail -n 1
   exit 0
 fi
 THEME="${THEME_ARG:?usage: theme.sh <theme folder> | --reset}"
@@ -76,6 +76,17 @@ if [ -f "$THEME/wallpaper.jpg" ]; then
 else
   tv "$(del wallpaper.jpg)" >/dev/null
 fi
+# Azan alert (azan_enabled): the Subuh adhan, the one used for the other four prayers, and the
+# wallpaper shown behind the takeover (AzanActivity). Each is optional on its own; a missing one
+# removes it from the TV rather than leaving a stale copy from an earlier theme.
+for FILE in azan_subuh.mp3 azan_other.mp3 azan_wallpaper.jpg; do
+  if [ -f "$THEME/$FILE" ]; then
+    "$PY" -I b64push.py "$THEME/$FILE" "$(stage "$FILE")"
+    tv "$(put "$FILE")"
+  else
+    tv "$(del "$FILE")" >/dev/null
+  fi
+done
 tv "mkdir -p $DIR/wallpapers 2>/dev/null; rm -f $DIR/wallpapers/*.jpg $DIR/wallpapers/*.jpeg $DIR/wallpapers/*.png $DIR/wallpapers/*.webp $DIR/wallpapers/*.JPG $DIR/wallpapers/*.JPEG $DIR/wallpapers/*.PNG $DIR/wallpapers/*.WEBP 2>/dev/null; content delete --uri $URI/wallpapers 2>/dev/null" >/dev/null
 if [ -d "$THEME/wallpapers" ]; then
   for IMAGE in "$THEME"/wallpapers/*; do

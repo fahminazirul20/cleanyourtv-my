@@ -270,6 +270,13 @@
          Empty by default. Can also be set with "extra_holiday_states" in a theme's config.json. -->
     <string name="extra_holiday_states" translatable="false"></string>
 
+    <!-- Azan (adhan) alert at each of the five daily prayer times: a full-screen takeover with the
+         Mecca wallpaper, playing azan_subuh.mp3 for Subuh or azan_other.mp3 for the rest, from the
+         launcher's external files dir (pushed by tools/theme.sh, same as wallpaper.jpg; see
+         themes/README.md). Off by default, and needs show_prayer_card + prayer_zone for a schedule
+         to compute from. Can also be set with "azan_enabled" in a theme's config.json. -->
+    <bool name="azan_enabled">false</bool>
+
     <!-- Time-of-day backdrop behind everything: a dark gradient that follows the clock, with a warm
          horizon glow around sunrise and sunset. 0 keeps the plain background (the default); 1 to 100
          sets its opacity. Around 60 reads clearly without hiding a wallpaper. Can also be set with
