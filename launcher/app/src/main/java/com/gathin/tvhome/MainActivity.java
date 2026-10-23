@@ -1599,26 +1599,21 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         Bitmap art = heroArtCache.get(key);
         if (art == null) {
-            Drawable source = adapter.artworkAt(position);
             String pkg = adapter.packageAt(position);
-            boolean customBg = false;
-            if (pkg != null) {
-                java.io.File custom = AppBackgrounds.forPackage(this, pkg);
-                if (custom != null) {
-                    Drawable loaded = AppBackgrounds.load(this, custom);
-                    if (loaded != null) {
-                        source = loaded;
-                        customBg = true;
-                    }
-                }
-            }
-            art = HeroArt.from(source);
+            java.io.File custom = pkg != null ? AppBackgrounds.forPackage(this, pkg) : null;
+            if (custom != null) art = AppBackgrounds.load(custom);
             if (art != null) {
-                heroArtCache.put(key, art);
-                if (customBg) heroArtAccent.put(key, HeroArt.averageColor(art));
-                else heroArtAccent.remove(key);
+                heroArtAccent.put(key, AppBackgrounds.averageColor(art));
+            } else {
+                art = HeroArt.from(adapter.artworkAt(position));
+                heroArtAccent.remove(key);
             }
+            if (art != null) heroArtCache.put(key, art);
         }
+        // A custom photo is shown as itself (centerCrop), not stretched the way HeroArt's icon-blur
+        // is (fitXY) — heroArtAccent's presence for this key is set above, cache hit or not.
+        heroArt.setScaleType(heroArtAccent.containsKey(key)
+                ? ImageView.ScaleType.CENTER_CROP : ImageView.ScaleType.FIT_XY);
         heroArtKey = key;
         final Bitmap next = art;
         if (!animations || reducedMotion || heroArt.getAlpha() == 0f) {

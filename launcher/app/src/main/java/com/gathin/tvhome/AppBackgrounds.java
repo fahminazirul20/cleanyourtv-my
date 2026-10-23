@@ -4,16 +4,15 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
+import android.graphics.Color;
 
 import java.io.File;
 
 /**
  * Per-app cinematic backdrop photos (Launcher settings, App backgrounds): a picture from
- * app_backgrounds/ in the launcher's external files dir, fed into HeroArt's own softening pipeline
- * in place of the app's icon/banner — same tiny-bitmap blur, same memory story, just a different
- * source image. Not an in-app file/photo picker: most Android TV firmware (this fork was built
+ * app_backgrounds/ in the launcher's external files dir, shown behind the dock as itself — not
+ * run through HeroArt's icon-softening blur, which would reduce any photo to an unrecognisable
+ * colour wash. Not an in-app file/photo picker: most Android TV firmware (this fork was built
  * against one) ships no app that answers ACTION_OPEN_DOCUMENT or ACTION_GET_CONTENT for images, so
  * pictures are copied into the folder the same way wallpapers/ already is — tools/theme.sh, a
  * file-transfer app, or adb push; see themes/README.md. One "default" entry covers every app
@@ -23,6 +22,9 @@ final class AppBackgrounds {
     static final String FOLDER_NAME = "app_backgrounds";
     private static final String KEY_PREFIX = "app_bg:";
     static final String DEFAULT_KEY = "default";
+    /** Longer edge of the decoded bitmap: recognisable as a photo on a 1080p screen (stretched by
+     *  the ImageView's own GPU scaling) without the memory a full-resolution decode would cost. */
+    private static final int MAX_DIMENSION = 960;
 
     private AppBackgrounds() {
     }
@@ -58,18 +60,37 @@ final class AppBackgrounds {
                 .remove(KEY_PREFIX + key).apply();
     }
 
-    /** Decoded down to a few times HeroArt's own 48×27 target — no point keeping more, it is about to
-     *  be shrunk further and blurred. Null if the file cannot be decoded. */
-    static Drawable load(Context ctx, File file) {
+    /** Decoded to about MAX_DIMENSION on the long edge, RGB_565 (no transparency needed for a
+     *  photo, half the memory of ARGB_8888). Null if the file cannot be decoded. */
+    static Bitmap load(File file) {
         BitmapFactory.Options bounds = new BitmapFactory.Options();
         bounds.inJustDecodeBounds = true;
         BitmapFactory.decodeFile(file.getPath(), bounds);
         if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null;
         int sample = 1;
-        while (bounds.outWidth / sample > HeroArt.W * 8 || bounds.outHeight / sample > HeroArt.H * 8) sample *= 2;
+        while (bounds.outWidth / sample > MAX_DIMENSION || bounds.outHeight / sample > MAX_DIMENSION) sample *= 2;
         BitmapFactory.Options opts = new BitmapFactory.Options();
         opts.inSampleSize = sample;
-        Bitmap bmp = BitmapFactory.decodeFile(file.getPath(), opts);
-        return bmp != null ? new BitmapDrawable(ctx.getResources(), bmp) : null;
+        opts.inPreferredConfig = Bitmap.Config.RGB_565;
+        return BitmapFactory.decodeFile(file.getPath(), opts);
+    }
+
+    /** Mean colour for the ambient glow, sampling roughly a 40×40 grid so it stays fast regardless
+     *  of the photo's decoded size — this runs once per app focus change, not per frame. */
+    static int averageColor(Bitmap bmp) {
+        int w = bmp.getWidth(), h = bmp.getHeight();
+        int stepX = Math.max(1, w / 40), stepY = Math.max(1, h / 40);
+        long r = 0, g = 0, b = 0;
+        int n = 0;
+        for (int y = 0; y < h; y += stepY) {
+            for (int x = 0; x < w; x += stepX) {
+                int p = bmp.getPixel(x, y);
+                r += Color.red(p);
+                g += Color.green(p);
+                b += Color.blue(p);
+                n++;
+            }
+        }
+        return n == 0 ? Color.BLACK : Color.rgb((int) (r / n), (int) (g / n), (int) (b / n));
     }
 }
