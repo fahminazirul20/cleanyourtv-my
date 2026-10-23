@@ -26,12 +26,17 @@ final class ThemeFiles {
                 && (collectionImage(segments.get(1)) || WallpaperCaptions.FILE_NAME.equals(segments.get(1)))) {
             return WALLPAPERS + "/" + segments.get(1);
         }
+        if (segments.size() == 2 && AppBackgrounds.FOLDER_NAME.equals(segments.get(0))
+                && collectionImage(segments.get(1))) {
+            return AppBackgrounds.FOLDER_NAME + "/" + segments.get(1);
+        }
         return null;
     }
 
-    /** True for "wallpapers" alone: a delete of it clears the collection's images. */
+    /** True for "wallpapers" or "app_backgrounds" alone: a delete of it clears the collection. */
     static boolean isCollection(List<String> segments) {
-        return segments != null && segments.size() == 1 && WALLPAPERS.equals(segments.get(0));
+        return segments != null && segments.size() == 1
+                && (WALLPAPERS.equals(segments.get(0)) || AppBackgrounds.FOLDER_NAME.equals(segments.get(0)));
     }
 
     static boolean collectionImage(String name) {

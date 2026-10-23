@@ -7,7 +7,7 @@
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
         <shape android:shape="rectangle">
-            <gradient android:angle="270" android:startColor="#662A2A2E" android:endColor="#80161618" />
+            <gradient android:angle="270" android:startColor="#402A2A2E" android:endColor="#54161618" />
             <stroke android:width="1.5dp" android:color="#59FFFFFF" />
             <corners android:radius="20dp" />
         </shape>

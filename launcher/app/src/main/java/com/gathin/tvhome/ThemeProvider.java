@@ -8,6 +8,7 @@ import android.os.ParcelFileDescriptor;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.List;
 
 /**
  * Lets tools/theme.sh write the theme files into {@link Config#dir} on firmware where the adb shell is
@@ -44,8 +45,9 @@ public class ThemeProvider extends ContentProvider {
     @Override
     public int delete(Uri uri, String selection, String[] selectionArgs) {
         File dir = Config.dir(getContext());
-        if (dir != null && ThemeFiles.isCollection(uri.getPathSegments())) {
-            File[] images = new File(dir, ThemeFiles.WALLPAPERS).listFiles((d, name) -> ThemeFiles.collectionImage(name));
+        List<String> segments = uri.getPathSegments();
+        if (dir != null && ThemeFiles.isCollection(segments)) {
+            File[] images = new File(dir, segments.get(0)).listFiles((d, name) -> ThemeFiles.collectionImage(name));
             int n = 0;
             if (images != null) for (File f : images) if (f.delete()) n++;
             return n;

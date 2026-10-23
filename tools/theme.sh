@@ -107,6 +107,21 @@ if [ -f "$THEME/wallpapers/captions.txt" ]; then
 else
   tv "$(del wallpapers/captions.txt)" >/dev/null
 fi
+# App backgrounds (App backgrounds in Launcher settings): per-app cinematic photos, picked from
+# this folder since most Android TV firmware has no app to answer an in-app file/photo picker.
+tv "mkdir -p $DIR/app_backgrounds 2>/dev/null; rm -f $DIR/app_backgrounds/*.jpg $DIR/app_backgrounds/*.jpeg $DIR/app_backgrounds/*.png $DIR/app_backgrounds/*.webp $DIR/app_backgrounds/*.JPG $DIR/app_backgrounds/*.JPEG $DIR/app_backgrounds/*.PNG $DIR/app_backgrounds/*.WEBP 2>/dev/null; content delete --uri $URI/app_backgrounds 2>/dev/null" >/dev/null
+if [ -d "$THEME/app_backgrounds" ]; then
+  for IMAGE in "$THEME"/app_backgrounds/*; do
+    [ -f "$IMAGE" ] || continue
+    case "$IMAGE" in
+      *.jpg|*.jpeg|*.png|*.webp|*.JPG|*.JPEG|*.PNG|*.WEBP)
+        NAME=$(basename "$IMAGE")
+        [[ "$NAME" =~ ^[A-Za-z0-9_.-]+$ ]] || { echo "unsupported app background filename: $NAME" >&2; exit 1; }
+        "$PY" -I b64push.py "$IMAGE" "$(stage "app_backgrounds/$NAME")"
+        tv "$(put "app_backgrounds/$NAME")" >/dev/null ;;
+    esac
+  done
+fi
 tv "printf '%s' '$REVISION' > $TMP-theme_revision; $(put theme_revision)" >/dev/null
 tv "$RESTART; echo applied" | tail -n 1
 echo "Theme $(basename "$THEME") is on the TV. Undo with: tools/theme.sh --reset"

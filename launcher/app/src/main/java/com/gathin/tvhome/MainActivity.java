@@ -146,6 +146,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private static final float HERO_ART_ALPHA = 0.5f;
     /** Softened artwork per app (HeroArt, about 5 KB each), made the first time its dock tile is focused. */
     private final Map<String, Bitmap> heroArtCache = new HashMap<>();
+    /** The ambient glow's colour for an app with a custom AppBackgrounds picture — the picture's own
+     *  average colour, not the app's usual accent, so the glow matches what showHeroArt is drawing. */
+    private final Map<String, Integer> heroArtAccent = new HashMap<>();
     /** The app whose artwork heroArt shows, so focusing it again only fades it back in. */
     private String heroArtKey;
     /** The focus glow's colour while the cinematic shelf tints it, 0 for plain white glass. */
@@ -932,6 +935,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         final List<Cards.Card> none = Collections.emptyList();
         // An updated app may bring new artwork; the backdrop is cheap to make again.
         heroArtCache.clear();
+        heroArtAccent.clear();
         heroArtKey = null;
         // One LEANBACK query for both the tiles and the card checks.
         final List<ResolveInfo> leanback = getPackageManager().queryIntentActivities(
@@ -1022,6 +1026,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         grid.setAdapter(null);
         grid.getRecycledViewPool().clear();
         heroArtCache.clear();
+        heroArtAccent.clear();
         heroArtKey = null;
         tileRefresh.invalidate();
     }
@@ -1477,10 +1482,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     private void showHero(int position, float dockTopInRoot) {
         String label = adapter.labelAt(position);
-        int color = adapter.ambientColorAt(position);
+        if (cinematic) showHeroArt(position);
+        // A custom AppBackgrounds picture tints the glow its own colour; showHeroArt (just above)
+        // has already populated heroArtAccent for this app if one applies.
+        String heroKey = adapter.keyAt(position);
+        Integer customColor = heroKey != null ? heroArtAccent.get(heroKey) : null;
+        int color = customColor != null ? customColor : adapter.ambientColorAt(position);
         float y = dockTopInRoot - 14 * density - 26 * density - hero.getHeight();
         boolean changed = !label.contentEquals(heroName.getText());
-        if (cinematic) showHeroArt(position);
 
         if (!animations || reducedMotion) {
             // Snap the shelf instead of sliding and fading it: each of those frames repaints the
@@ -1590,8 +1599,25 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         Bitmap art = heroArtCache.get(key);
         if (art == null) {
-            art = HeroArt.from(adapter.artworkAt(position));
-            if (art != null) heroArtCache.put(key, art);
+            Drawable source = adapter.artworkAt(position);
+            String pkg = adapter.packageAt(position);
+            boolean customBg = false;
+            if (pkg != null) {
+                java.io.File custom = AppBackgrounds.forPackage(this, pkg);
+                if (custom != null) {
+                    Drawable loaded = AppBackgrounds.load(this, custom);
+                    if (loaded != null) {
+                        source = loaded;
+                        customBg = true;
+                    }
+                }
+            }
+            art = HeroArt.from(source);
+            if (art != null) {
+                heroArtCache.put(key, art);
+                if (customBg) heroArtAccent.put(key, HeroArt.averageColor(art));
+                else heroArtAccent.remove(key);
+            }
         }
         heroArtKey = key;
         final Bitmap next = art;

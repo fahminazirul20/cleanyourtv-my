@@ -79,13 +79,22 @@ system — the same mechanism the stock Android TV launcher uses for its "Play N
 
 ## 4. Cinematic backdrop per focused app
 
-Not new code — this turns on two settings the base launcher already ships (both off by default):
-`cinematic_home` (the focused dock app's own icon/banner, heavily downscaled then stretched
-full-screen, which blurs it without the cost of a real blur) and `dock_title: false` (hides the big
-app-name-and-dots row that `cinematic_home` would otherwise show above the dock, so the background
-changes without eating the vertical space other app rows need). Deliberately **not** downloaded
-artwork — using the app's own already-installed icon avoids any copyright question around bundling
-or fetching official promotional art.
+Turns on two settings the base launcher already ships (both off by default): `cinematic_home` (the
+focused dock app's own icon/banner, heavily downscaled then stretched full-screen, which blurs it
+without the cost of a real blur) and `dock_title: false` (hides the big app-name-and-dots row that
+`cinematic_home` would otherwise show above the dock, so the background changes without eating the
+vertical space other app rows need).
+
+**App backgrounds** (new, Launcher settings) replaces an app's own icon/banner with a picture of
+your own for that backdrop, per app, plus an optional default for apps without one — the ambient
+glow switches to the picture's own average colour too, not the app's usual accent, so the two stay
+matched (`HeroArt.averageColor`, `MainActivity.showHero`/`showHeroArt`). Pictures live in
+`app_backgrounds/` in the launcher's external files dir (same mechanism as `wallpapers/`), listed by
+Launcher settings from whatever is already there — not an in-app picker, since most Android TV
+firmware has no app that answers one for images (this fork's own TV included); push pictures there
+with `tools/theme.sh`, a file-transfer app, or `adb push`. See `themes/README.md`'s App backgrounds
+section. Deliberately **not** downloaded artwork — your own pictures or the app's own installed icon
+avoid any copyright question around bundling or fetching official promotional art.
 
 ## 5. Azan (adhan) alert
 
@@ -117,6 +126,7 @@ it also ends on its own once the audio finishes, or if something else comes to t
 |---|---|
 | Prayer zone | Pick your JAKIM zone from all 60; sets the Waktu Solat card and screensaver |
 | Azan | On/off for the full-screen adhan alert at each of the five daily prayer times |
+| App backgrounds | Assign a picture from `app_backgrounds/` to an app's cinematic backdrop, or a default for the rest |
 | Public holiday states | Multi-select states for the Holidays card, or "Malaysia (all states)" |
 | (existing rows: Apps per row, Edit dock, Wallpaper, Animations, …) | Unchanged from the base project |
 

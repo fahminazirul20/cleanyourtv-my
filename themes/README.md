@@ -119,6 +119,20 @@ these the same way it does `wallpaper.jpg`. Back on the remote cancels an alert 
 its own once the audio finishes, or stops if something else comes to the front first (another app,
 Home, the alert itself being replaced by a later one).
 
+## App backgrounds
+
+`cinematic_home`'s top shelf normally shows a dock app's own icon or banner, softened. App backgrounds
+(Launcher settings) swaps that for a picture of your own, per app, plus an optional default for every
+app without its own: the ambient glow also switches to the picture's own average colour instead of the
+app's usual accent, so the two stay matched.
+
+Pictures go in an `app_backgrounds/` folder beside `config.json`, the same way a `wallpapers/`
+collection does; `tools/theme.sh` pushes and clears them the same way. There is no in-app photo
+picker — most Android TV firmware (this fork was built against one) ships nothing that answers
+`ACTION_OPEN_DOCUMENT` or `ACTION_GET_CONTENT` for images — so Launcher settings lists whatever is
+already in that folder on the TV instead. Get pictures there with `tools/theme.sh`, a file-transfer
+app, or `adb push`, naming them anything ending `.jpg`, `.jpeg`, `.png` or `.webp`.
+
 ## Wallpapers
 
 `wallpaper.jpg` is drawn full screen behind the launcher, centre-cropped. Keep it dark, 1920×1080 and

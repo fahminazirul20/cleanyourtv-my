@@ -81,6 +81,16 @@ if (Test-Path $captions -PathType Leaf) {
 } else {
     & $py -I tv.py (Drop 'wallpapers/captions.txt') | Out-Null
 }
+# App backgrounds (App backgrounds in Launcher settings): per-app cinematic photos.
+& $py -I tv.py "mkdir -p $dir/app_backgrounds 2>/dev/null; rm -f $dir/app_backgrounds/*.jpg $dir/app_backgrounds/*.jpeg $dir/app_backgrounds/*.png $dir/app_backgrounds/*.webp $dir/app_backgrounds/*.JPG $dir/app_backgrounds/*.JPEG $dir/app_backgrounds/*.PNG $dir/app_backgrounds/*.WEBP 2>/dev/null; content delete --uri $uri/app_backgrounds 2>/dev/null" | Out-Null
+$appBackgrounds = Join-Path $Theme 'app_backgrounds'
+if (Test-Path $appBackgrounds -PathType Container) {
+    Get-ChildItem $appBackgrounds -File | Where-Object { $_.Extension -match '^\.(jpg|jpeg|png|webp)$' } | ForEach-Object {
+        if ($_.Name -notmatch '^[A-Za-z0-9_.-]+$') { throw "unsupported app background filename: $($_.Name)" }
+        & $py -I b64push.py $_.FullName (Stage "app_backgrounds/$($_.Name)")
+        & $py -I tv.py (Put "app_backgrounds/$($_.Name)") | Out-Null
+    }
+}
 & $py -I tv.py "printf '%s' '$revision' > $tmp-theme_revision; $(Put 'theme_revision')" | Out-Null
 & $py -I tv.py "$restart; echo applied"
 Write-Host "Theme $(Split-Path $Theme -Leaf) is on the TV. Undo with: tools\theme.ps1 -TvHost $TvHost -Reset"

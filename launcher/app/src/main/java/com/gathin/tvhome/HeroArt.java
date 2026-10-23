@@ -65,6 +65,22 @@ final class HeroArt {
         return v < 0 ? 0 : v > 255 ? 255 : Math.round(v);
     }
 
+    /** Mean colour of the softened artwork — cheap over 48×27 pixels — so a custom app background
+     *  (AppBackgrounds) can tint the ambient glow to match itself instead of the app's own accent. */
+    static int averageColor(Bitmap art) {
+        int w = art.getWidth(), h = art.getHeight();
+        int[] px = new int[w * h];
+        art.getPixels(px, 0, w, 0, 0, w, h);
+        long r = 0, g = 0, b = 0;
+        for (int p : px) {
+            r += Color.red(p);
+            g += Color.green(p);
+            b += Color.blue(p);
+        }
+        int n = px.length;
+        return Color.rgb((int) (r / n), (int) (g / n), (int) (b / n));
+    }
+
     /** One box blur pass along rows (horizontal) or columns, edges clamped. */
     private static int[] boxBlur(int[] src, int w, int h, int radius, boolean horizontal) {
         int[] dst = new int[src.length];

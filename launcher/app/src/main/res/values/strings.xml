@@ -66,6 +66,14 @@
     <!-- Launcher settings: toggles the azan alert (AzanManager/AzanActivity). -->
     <string name="azan_setting_state">Azan: %1$s</string>
     <string name="azan_now">%1$s has begun</string>
+    <!-- Launcher settings: per-app cinematic backdrop photos (AppBackgrounds). Needs cinematic_home. -->
+    <string name="app_backgrounds_setting">App backgrounds</string>
+    <string name="app_backgrounds_setting_state">App backgrounds: %1$s</string>
+    <string name="app_backgrounds_none">None</string>
+    <string name="app_backgrounds_count">%1$d set</string>
+    <string name="app_background_default">Default background</string>
+    <string name="app_background_remove">Remove photo</string>
+    <string name="app_background_empty_folder">Copy a picture into %1$s first</string>
     <string name="wallpaper_none">None</string>
     <string name="wallpaper_applied">Wallpaper changed</string>
     <string name="wallpaper_theme_default">Theme default</string>

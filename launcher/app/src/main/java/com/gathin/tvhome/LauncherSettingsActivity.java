@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.widget.LinearLayout;
@@ -36,6 +37,15 @@ public final class LauncherSettingsActivity extends Activity {
     };
     private TextView azanChoice;
     private boolean azanEnabled;
+    private TextView appBackgroundsChoice;
+    private List<String> dockApps;
+    /** Apps the App backgrounds picker offers, beyond the dock's own apps: the streaming and media
+     *  apps a Malaysian setup is likely to have, the same way WatchNext hardcodes its package list.
+     *  A package not installed is simply left out of the picker. */
+    private static final String[] BACKGROUND_PACKAGES = {
+            "com.netflix.ninja", "com.google.android.youtube.tv", "com.disney.disneyplus",
+            "my.gov.rtm.tv", "org.jellyfin.androidtv", "com.mitv.videoplayer",
+    };
     private TextView animationsChoice;
     private TextView advancedChoice;
     private TextView followThemeChoice;
@@ -56,6 +66,7 @@ public final class LauncherSettingsActivity extends Activity {
         advancedEffects = config.animations && config.advancedEffects;
         prayerZone = config.prayerZone;
         azanEnabled = config.azanEnabled;
+        dockApps = config.dockApps;
 
         int[] ids = {R.id.columns4, R.id.columns5, R.id.columns6, R.id.columns7};
         for (int i = 0; i < ids.length; i++) {
@@ -101,6 +112,8 @@ public final class LauncherSettingsActivity extends Activity {
             setResult(RESULT_OK);
             refresh();
         });
+        appBackgroundsChoice = findViewById(R.id.appBackgroundsChoice);
+        appBackgroundsChoice.setOnClickListener(v -> showAppBackgroundsPicker());
         animationsChoice = findViewById(R.id.animationsChoice);
         animationsChoice.setOnClickListener(v -> {
             animations = !animations;
@@ -275,6 +288,77 @@ public final class LauncherSettingsActivity extends Activity {
         });
     }
 
+    /** Default background, then each known app by its own label (BACKGROUND_PACKAGES plus the
+     *  dock's own apps, deduped, apps not installed left out); a custom picture already set shows a
+     *  checkmark. Picking one opens showAppBackgroundAction for choose/remove. */
+    private void showAppBackgroundsPicker() {
+        List<String> keys = new ArrayList<>();
+        List<String> labels = new ArrayList<>();
+        keys.add(AppBackgrounds.DEFAULT_KEY);
+        labels.add(getString(R.string.app_background_default));
+        PackageManager pm = getPackageManager();
+        List<String> candidates = new ArrayList<>(Arrays.asList(BACKGROUND_PACKAGES));
+        for (String pkg : dockApps) if (!candidates.contains(pkg)) candidates.add(pkg);
+        for (String pkg : candidates) {
+            if (keys.contains(pkg)) continue;
+            String label;
+            try {
+                label = String.valueOf(pm.getApplicationInfo(pkg, 0).loadLabel(pm));
+            } catch (PackageManager.NameNotFoundException e) {
+                continue;   // not installed on this TV
+            }
+            keys.add(pkg);
+            labels.add(label);
+        }
+        String[] items = new String[labels.size()];
+        for (int i = 0; i < labels.size(); i++) {
+            items[i] = AppBackgrounds.has(this, keys.get(i)) ? labels.get(i) + " ✓" : labels.get(i);
+        }
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.app_backgrounds_setting)
+                .setItems(items, (dialog, which) -> showAppBackgroundAction(keys.get(which), labels.get(which)))
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    /** Lists the pictures in app_backgrounds/ (same folder tools/theme.sh pushes) to assign to this
+     *  app, with Remove when one is already set. Empty folder: a Toast naming the path instead of
+     *  an empty dialog, since there is nothing to pick from an external app on this TV's firmware
+     *  (see AppBackgrounds's own note). */
+    private void showAppBackgroundAction(String key, String label) {
+        File dir = AppBackgrounds.dir(this);
+        List<File> images = WallpaperRotation.images(dir);
+        if (images.isEmpty()) {
+            Toast.makeText(this, getString(R.string.app_background_empty_folder,
+                    "Android/data/" + getPackageName() + "/files/" + AppBackgrounds.FOLDER_NAME),
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+        String[] names = new String[images.size()];
+        for (int i = 0; i < images.size(); i++) names[i] = images.get(i).getName();
+        SharedPreferences choices = getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE);
+        String current = choices.getString("app_bg:" + key, null);
+        int checked = -1;
+        for (int i = 0; i < names.length; i++) if (names[i].equals(current)) checked = i;
+        AlertDialog.Builder builder = new AlertDialog.Builder(this)
+                .setTitle(label)
+                .setSingleChoiceItems(names, checked, (d, which) -> {
+                    d.dismiss();
+                    AppBackgrounds.set(this, key, names[which]);
+                    setResult(RESULT_OK);
+                    refresh();
+                })
+                .setNegativeButton(android.R.string.cancel, null);
+        if (AppBackgrounds.has(this, key)) {
+            builder.setNeutralButton(R.string.app_background_remove, (d, which) -> {
+                AppBackgrounds.clear(this, key);
+                setResult(RESULT_OK);
+                refresh();
+            });
+        }
+        builder.show();
+    }
+
     private static int indexOf(List<File> images, String name) {
         if (name == null) return -1;
         for (int i = 0; i < images.size(); i++) {
@@ -314,6 +398,14 @@ public final class LauncherSettingsActivity extends Activity {
         holidayStatesChoice.setText(getString(R.string.holiday_states_setting_state, holidayStatesSummary()));
         azanChoice.setText(getString(R.string.azan_setting_state,
                 getString(azanEnabled ? R.string.on : R.string.off)));
+        int bgCount = 0;
+        if (AppBackgrounds.has(this, AppBackgrounds.DEFAULT_KEY)) bgCount++;
+        List<String> bgCandidates = new ArrayList<>(Arrays.asList(BACKGROUND_PACKAGES));
+        for (String pkg : dockApps) if (!bgCandidates.contains(pkg)) bgCandidates.add(pkg);
+        for (String pkg : bgCandidates) if (AppBackgrounds.has(this, pkg)) bgCount++;
+        appBackgroundsChoice.setText(getString(R.string.app_backgrounds_setting_state,
+                bgCount == 0 ? getString(R.string.app_backgrounds_none)
+                        : getString(R.string.app_backgrounds_count, bgCount)));
         followThemeChoice.setSelected(!hasOnTvChoices());
     }
 
