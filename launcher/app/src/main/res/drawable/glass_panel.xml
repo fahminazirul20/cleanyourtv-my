@@ -7,9 +7,17 @@
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
         <shape android:shape="rectangle">
-            <gradient android:angle="270" android:startColor="#8C2A2A2E" android:endColor="#A3161618" />
-            <stroke android:width="1dp" android:color="#40FFFFFF" />
+            <gradient android:angle="270" android:startColor="#662A2A2E" android:endColor="#80161618" />
+            <stroke android:width="1.5dp" android:color="#59FFFFFF" />
             <corners android:radius="20dp" />
+        </shape>
+    </item>
+    <!-- A glossy top sheen, like light catching the top edge of real glass. -->
+    <item android:bottom="60dp">
+        <shape android:shape="rectangle">
+            <gradient android:angle="270" android:startColor="#26FFFFFF" android:endColor="#00FFFFFF" />
+            <corners android:topLeftRadius="20dp" android:topRightRadius="20dp"
+                android:bottomLeftRadius="0dp" android:bottomRightRadius="0dp" />
         </shape>
     </item>
 </layer-list>
