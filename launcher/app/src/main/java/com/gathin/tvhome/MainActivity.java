@@ -1764,13 +1764,27 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      * name above the dock does not show (every grid tile has its name underneath).
      */
     private void showGlowOnly(int position) {
-        int color = adapter.ambientColorAt(position);
+        // A grid app with its own AppBackgrounds picture still gets the backdrop image and the
+        // glow tinted to it, same as a dock app would — just without the dock's name/meta/dots,
+        // which only make sense over the dock row. An app with no picture of its own keeps the
+        // plain per-app glow, heroArt hidden, as cinematic_home always did outside the dock.
+        String pkg = adapter.packageAt(position);
+        boolean customBg = cinematic && pkg != null && AppBackgrounds.forPackage(this, pkg) != null;
+        int color;
+        if (customBg) {
+            showHeroArt(position);
+            String key = adapter.keyAt(position);
+            Integer customColor = key != null ? heroArtAccent.get(key) : null;
+            color = customColor != null ? customColor : adapter.ambientColorAt(position);
+        } else {
+            color = adapter.ambientColorAt(position);
+            heroArt.animate().cancel();
+            heroArt.setAlpha(0f);
+        }
         stopAmbientAnimation();
         hero.animate().cancel();
         ambient.animate().cancel();
         hero.setAlpha(0f);
-        heroArt.animate().cancel();
-        heroArt.setAlpha(0f);
         heroShown = false;
         if (!ambientGlow) return;
         if (!animations || reducedMotion) {
