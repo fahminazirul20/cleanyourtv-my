@@ -269,29 +269,57 @@ public final class LauncherSettingsActivity extends Activity {
         List<String> current = configured ? Arrays.asList(stored.split(",", -1)) : java.util.Collections.emptyList();
         boolean allMode = configured && stored.isEmpty();
 
-        String[] labels = new String[HOLIDAY_STATES.length + 1];
-        boolean[] checked = new boolean[HOLIDAY_STATES.length + 1];
-        labels[0] = getString(R.string.holiday_states_all);
-        checked[0] = allMode;
-        for (int i = 0; i < HOLIDAY_STATES.length; i++) {
-            labels[i + 1] = HOLIDAY_STATES[i][0];
-            checked[i + 1] = !allMode && current.contains(HOLIDAY_STATES[i][1]);
-        }
+        // Checking "Malaysia" clears and locks out the individual states, and checking any state
+        // un-checks "Malaysia": the two are mutually exclusive, enforced live as the owner picks.
+        // Plain CheckBox widgets, not AlertDialog.setMultiChoiceItems: ListView.setItemChecked(),
+        // called either from a raw OnItemClickListener or the documented OnMultiChoiceClickListener,
+        // silently failed to clear "Malaysia" on this TV's Android build -- it stayed checked (both
+        // visually and in isItemChecked()), so picking a single state still saved as "all states".
+        // A real CheckBox's own setChecked() has no such ListView-choice-mode layer to misbehave in.
+        float density = getResources().getDisplayMetrics().density;
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        int pad = (int) (24 * density);
+        box.setPadding(pad, pad / 2, pad, pad / 2);
 
-        AlertDialog dialog = new AlertDialog.Builder(this)
+        android.widget.CheckBox malaysiaBox = new android.widget.CheckBox(this);
+        malaysiaBox.setText(R.string.holiday_states_all);
+        malaysiaBox.setTextColor(0xFFFFFFFF);
+        malaysiaBox.setChecked(allMode);
+        box.addView(malaysiaBox);
+
+        android.widget.CheckBox[] stateBoxes = new android.widget.CheckBox[HOLIDAY_STATES.length];
+        for (int i = 0; i < HOLIDAY_STATES.length; i++) {
+            android.widget.CheckBox cb = new android.widget.CheckBox(this);
+            cb.setText(HOLIDAY_STATES[i][0]);
+            cb.setTextColor(0xFFFFFFFF);
+            cb.setChecked(!allMode && current.contains(HOLIDAY_STATES[i][1]));
+            stateBoxes[i] = cb;
+            box.addView(cb);
+        }
+        malaysiaBox.setOnCheckedChangeListener((btn, isChecked) -> {
+            if (isChecked) for (android.widget.CheckBox cb : stateBoxes) cb.setChecked(false);
+        });
+        for (android.widget.CheckBox cb : stateBoxes) {
+            cb.setOnCheckedChangeListener((btn, isChecked) -> {
+                if (isChecked) malaysiaBox.setChecked(false);
+            });
+        }
+        android.widget.ScrollView scroll = new android.widget.ScrollView(this);
+        scroll.addView(box);
+
+        new AlertDialog.Builder(this)
                 .setTitle(R.string.holiday_states_setting)
-                .setMultiChoiceItems(labels, checked, null)
+                .setView(scroll)
                 .setPositiveButton(android.R.string.ok, (d, which) -> {
-                    android.widget.ListView list = ((AlertDialog) d).getListView();
-                    boolean malaysiaChecked = list.isItemChecked(0);
                     List<String> picked = new ArrayList<>();
-                    if (!malaysiaChecked) {
+                    if (!malaysiaBox.isChecked()) {
                         for (int i = 0; i < HOLIDAY_STATES.length; i++) {
-                            if (list.isItemChecked(i + 1)) picked.add(HOLIDAY_STATES[i][1]);
+                            if (stateBoxes[i].isChecked()) picked.add(HOLIDAY_STATES[i][1]);
                         }
                     }
                     choices.edit().putString("holiday_states",
-                            malaysiaChecked ? "" : String.join(",", picked)).apply();
+                            malaysiaBox.isChecked() ? "" : String.join(",", picked)).apply();
                     setResult(RESULT_OK);
                     refresh();
                 })
@@ -301,20 +329,7 @@ public final class LauncherSettingsActivity extends Activity {
                     refresh();
                 })
                 .setNegativeButton(android.R.string.cancel, null)
-                .create();
-        dialog.show();
-        // Checking "Malaysia" clears and locks out the individual states, and checking any state
-        // un-checks "Malaysia": the two are mutually exclusive, enforced live as the owner picks.
-        android.widget.ListView list = dialog.getListView();
-        list.setOnItemClickListener((parent, view, position, id) -> {
-            if (position == 0) {
-                if (list.isItemChecked(0)) {
-                    for (int i = 1; i <= HOLIDAY_STATES.length; i++) list.setItemChecked(i, false);
-                }
-            } else if (list.isItemChecked(position)) {
-                list.setItemChecked(0, false);
-            }
-        });
+                .show();
     }
 
     /** Default background, then every installed app (same LEANBACK_LAUNCHER/LAUNCHER query the
