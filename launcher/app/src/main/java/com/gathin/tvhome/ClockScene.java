@@ -6,8 +6,11 @@ import android.graphics.drawable.GradientDrawable;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
 
+import java.io.File;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -37,6 +40,12 @@ final class ClockScene {
     private int colorIndex;
     private int glowColor;
 
+    private final ImageView photo;
+    private final View photoScrim;
+    private final List<File> photoFiles;
+    private final long photoIntervalMs;
+    private int photoIndex;
+
     private final Runnable tick = new Runnable() {
         @Override
         public void run() {
@@ -44,6 +53,15 @@ final class ClockScene {
             shiftGlow();
             updatePrayer();
             handler.postDelayed(this, MOVE_MS);
+        }
+    };
+
+    private final Runnable photoTick = new Runnable() {
+        @Override
+        public void run() {
+            photoIndex = (photoIndex + 1) % photoFiles.size();
+            showPhoto(photoFiles.get(photoIndex));
+            handler.postDelayed(this, photoIntervalMs);
         }
     };
 
@@ -69,6 +87,17 @@ final class ClockScene {
         showPrayer = cfg.showPrayerCard;
         prayerZone = cfg.prayerZone;
         if (showPrayer) PrayerTimes.refreshIfNeeded(context, prayerZone, this::updatePrayer);
+
+        photo = root.findViewById(R.id.dreamPhoto);
+        photoScrim = root.findViewById(R.id.dreamPhotoScrim);
+        photoFiles = ScreensaverImages.images(context);
+        photoIntervalMs = ScreensaverImages.intervalSeconds(context) * 1000L;
+        if (!photoFiles.isEmpty()) {
+            photoIndex = random.nextInt(photoFiles.size());
+            photo.setVisibility(View.VISIBLE);
+            photoScrim.setVisibility(View.VISIBLE);
+            showPhoto(photoFiles.get(photoIndex));
+        }
     }
 
     void start() {
@@ -80,6 +109,17 @@ final class ClockScene {
         });
         handler.removeCallbacks(tick);
         handler.postDelayed(tick, MOVE_MS);
+        if (photoFiles.size() > 1) {
+            handler.removeCallbacks(photoTick);
+            handler.postDelayed(photoTick, photoIntervalMs);
+        }
+    }
+
+    /** Decoded the same way App backgrounds shows a photo (AppBackgrounds.load): recognisable, not
+     *  blurred down to a colour wash. A failed decode just leaves the previous picture on screen. */
+    private void showPhoto(File file) {
+        android.graphics.Bitmap bmp = AppBackgrounds.load(file);
+        if (bmp != null) photo.setImageBitmap(bmp);
     }
 
     /** Text only, same once-a-minute cadence as the clock drift: no network on this call, the

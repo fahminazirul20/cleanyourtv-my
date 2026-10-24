@@ -74,6 +74,15 @@
     <string name="app_background_default">Default background</string>
     <string name="app_background_remove">Remove photo</string>
     <string name="app_background_empty_folder">Copy a picture into %1$s first</string>
+    <!-- Launcher settings: the screensaver's own photo(s) (ScreensaverImages), independent of App backgrounds. -->
+    <string name="screensaver_images_setting">Screensaver images</string>
+    <string name="screensaver_images_setting_state">Screensaver images: %1$s</string>
+    <string name="screensaver_images_none">None</string>
+    <string name="screensaver_images_count">%1$d set</string>
+    <string name="screensaver_interval_setting">Screensaver interval</string>
+    <string name="screensaver_interval_setting_state">Screensaver interval: %1$s</string>
+    <string name="screensaver_interval_seconds">%1$ds</string>
+    <string name="screensaver_interval_minutes">%1$dm</string>
     <string name="wallpaper_none">None</string>
     <string name="wallpaper_applied">Wallpaper changed</string>
     <string name="wallpaper_theme_default">Theme default</string>

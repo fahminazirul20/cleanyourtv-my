@@ -87,6 +87,16 @@
             android:layout_marginTop="10dp" />
 
         <TextView
+            android:id="@+id/screensaverImagesChoice"
+            style="@style/SettingsRow"
+            android:layout_marginTop="10dp" />
+
+        <TextView
+            android:id="@+id/screensaverIntervalChoice"
+            style="@style/SettingsRow"
+            android:layout_marginTop="10dp" />
+
+        <TextView
             android:id="@+id/animationsChoice"
             style="@style/SettingsRow"
             android:layout_marginTop="28dp" />

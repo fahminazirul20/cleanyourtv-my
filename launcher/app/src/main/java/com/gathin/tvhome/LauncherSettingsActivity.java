@@ -41,9 +41,11 @@ public final class LauncherSettingsActivity extends Activity {
     private TextView azanChoice;
     private boolean azanEnabled;
     private TextView appBackgroundsChoice;
+    private TextView screensaverImagesChoice;
+    private TextView screensaverIntervalChoice;
     private static final int STORAGE_PERMISSION_REQUEST = 4200;
-    private String pendingBgKey;
-    private String pendingBgLabel;
+    /** What to retry once the storage-permission system dialog answers, whichever picker asked. */
+    private Runnable pendingStorageAction;
     private TextView animationsChoice;
     private TextView advancedChoice;
     private TextView followThemeChoice;
@@ -111,6 +113,10 @@ public final class LauncherSettingsActivity extends Activity {
         });
         appBackgroundsChoice = findViewById(R.id.appBackgroundsChoice);
         appBackgroundsChoice.setOnClickListener(v -> showAppBackgroundsPicker());
+        screensaverImagesChoice = findViewById(R.id.screensaverImagesChoice);
+        screensaverImagesChoice.setOnClickListener(v -> showScreensaverImagesPicker());
+        screensaverIntervalChoice = findViewById(R.id.screensaverIntervalChoice);
+        screensaverIntervalChoice.setOnClickListener(v -> showScreensaverIntervalPicker());
         animationsChoice = findViewById(R.id.animationsChoice);
         animationsChoice.setOnClickListener(v -> {
             animations = !animations;
@@ -332,8 +338,7 @@ public final class LauncherSettingsActivity extends Activity {
      *  then re-opens itself once the system dialog answers. */
     private void showAppBackgroundAction(String key, String label) {
         if (!AppBackgrounds.hasStoragePermission(this)) {
-            pendingBgKey = key;
-            pendingBgLabel = label;
+            pendingStorageAction = () -> showAppBackgroundAction(key, label);
             requestPermissions(new String[]{AppBackgrounds.storagePermission()}, STORAGE_PERMISSION_REQUEST);
             return;
         }
@@ -375,12 +380,84 @@ public final class LauncherSettingsActivity extends Activity {
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == STORAGE_PERMISSION_REQUEST && pendingBgKey != null) {
-            String key = pendingBgKey, label = pendingBgLabel;
-            pendingBgKey = null;
-            pendingBgLabel = null;
-            showAppBackgroundAction(key, label);
+        if (requestCode == STORAGE_PERMISSION_REQUEST && pendingStorageAction != null) {
+            Runnable action = pendingStorageAction;
+            pendingStorageAction = null;
+            action.run();
         }
+    }
+
+    /** All images App backgrounds would offer: app_backgrounds/ (no permission needed) plus, once
+     *  granted, the TV's own Pictures/DCIM/Download. */
+    private List<File> allBackgroundImages() {
+        List<File> images = new ArrayList<>();
+        for (File dir : AppBackgrounds.sourceDirs(this)) images.addAll(WallpaperRotation.images(dir));
+        return images;
+    }
+
+    /** Checkboxes over the same image list App backgrounds offers; OK saves the checked ones in
+     *  their list order as the screensaver's rotation, replacing whatever was set before. Asks for
+     *  the storage permission first if it isn't granted yet, same as App backgrounds. */
+    private void showScreensaverImagesPicker() {
+        if (!AppBackgrounds.hasStoragePermission(this)) {
+            pendingStorageAction = this::showScreensaverImagesPicker;
+            requestPermissions(new String[]{AppBackgrounds.storagePermission()}, STORAGE_PERMISSION_REQUEST);
+            return;
+        }
+        List<File> images = allBackgroundImages();
+        if (images.isEmpty()) {
+            Toast.makeText(this, getString(R.string.app_background_empty_folder,
+                    "Android/data/" + getPackageName() + "/files/" + AppBackgrounds.FOLDER_NAME),
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+        String[] names = new String[images.size()];
+        boolean[] checked = new boolean[images.size()];
+        List<File> current = ScreensaverImages.images(this);
+        for (int i = 0; i < images.size(); i++) {
+            names[i] = images.get(i).getName();
+            checked[i] = current.contains(images.get(i));
+        }
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.screensaver_images_setting)
+                .setMultiChoiceItems(names, checked, null)
+                .setPositiveButton(android.R.string.ok, (d, which) -> {
+                    android.widget.ListView list = ((AlertDialog) d).getListView();
+                    List<File> picked = new ArrayList<>();
+                    for (int i = 0; i < images.size(); i++) if (list.isItemChecked(i)) picked.add(images.get(i));
+                    ScreensaverImages.setImages(this, picked);
+                    setResult(RESULT_OK);
+                    refresh();
+                })
+                .setNeutralButton(R.string.app_background_remove, (d, which) -> {
+                    ScreensaverImages.setImages(this, new ArrayList<>());
+                    setResult(RESULT_OK);
+                    refresh();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void showScreensaverIntervalPicker() {
+        String[] labels = new String[ScreensaverImages.INTERVAL_PRESETS.length];
+        int checked = -1;
+        int current = ScreensaverImages.intervalSeconds(this);
+        for (int i = 0; i < ScreensaverImages.INTERVAL_PRESETS.length; i++) {
+            int secs = ScreensaverImages.INTERVAL_PRESETS[i];
+            labels[i] = secs < 60 ? getString(R.string.screensaver_interval_seconds, secs)
+                    : getString(R.string.screensaver_interval_minutes, secs / 60);
+            if (secs == current) checked = i;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.screensaver_interval_setting)
+                .setSingleChoiceItems(labels, checked, (d, which) -> {
+                    d.dismiss();
+                    ScreensaverImages.setIntervalSeconds(this, ScreensaverImages.INTERVAL_PRESETS[which]);
+                    setResult(RESULT_OK);
+                    refresh();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
     }
 
     private static int indexOf(List<File> images, String name) {
@@ -426,6 +503,14 @@ public final class LauncherSettingsActivity extends Activity {
         appBackgroundsChoice.setText(getString(R.string.app_backgrounds_setting_state,
                 bgCount == 0 ? getString(R.string.app_backgrounds_none)
                         : getString(R.string.app_backgrounds_count, bgCount)));
+        int ssCount = ScreensaverImages.images(this).size();
+        screensaverImagesChoice.setText(getString(R.string.screensaver_images_setting_state,
+                ssCount == 0 ? getString(R.string.screensaver_images_none)
+                        : getString(R.string.screensaver_images_count, ssCount)));
+        int interval = ScreensaverImages.intervalSeconds(this);
+        screensaverIntervalChoice.setText(getString(R.string.screensaver_interval_setting_state,
+                interval < 60 ? getString(R.string.screensaver_interval_seconds, interval)
+                        : getString(R.string.screensaver_interval_minutes, interval / 60)));
         followThemeChoice.setSelected(!hasOnTvChoices());
     }
 
