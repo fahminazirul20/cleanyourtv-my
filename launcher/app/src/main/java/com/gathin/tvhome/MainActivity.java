@@ -1587,11 +1587,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         Canvas canvas = new Canvas(bmp);
         boolean rtl = getResources().getBoolean(R.bool.rtl_menu_bar);
         Paint paint = new Paint();
+        // Lighter than the base launcher's own icon-blur scrim: a real photo (App backgrounds)
+        // should stay readable as a photo, not fade back into a near-black wash. Just enough left
+        // to keep the hero name legible on its own side and the bottom edge settle into the dock.
         paint.setShader(new LinearGradient(rtl ? w : 0, 0, rtl ? 0 : w, 0,
-                new int[]{0xD1060406, 0x59060406, 0x00060406}, new float[]{0f, 0.42f, 0.7f}, Shader.TileMode.CLAMP));
+                new int[]{0x82060406, 0x29060406, 0x00060406}, new float[]{0f, 0.42f, 0.7f}, Shader.TileMode.CLAMP));
         canvas.drawRect(0, 0, w, h, paint);
         paint.setShader(new LinearGradient(0, 0, 0, h,
-                new int[]{0x00060406, 0x00060406, 0xDB060406, 0xFF060406}, new float[]{0f, 0.28f, 0.58f, 0.76f},
+                new int[]{0x00060406, 0x00060406, 0x70060406, 0x94060406}, new float[]{0f, 0.45f, 0.72f, 0.86f},
                 Shader.TileMode.CLAMP));
         canvas.drawRect(0, 0, w, h, paint);
         BitmapDrawable scrim = new BitmapDrawable(getResources(), bmp);
