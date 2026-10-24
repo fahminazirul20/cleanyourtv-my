@@ -15,8 +15,10 @@ import java.io.File;
  * colour wash. Not an in-app file/photo picker: most Android TV firmware (this fork was built
  * against one) ships no app that answers ACTION_OPEN_DOCUMENT or ACTION_GET_CONTENT for images, so
  * pictures are copied into the folder the same way wallpapers/ already is — tools/theme.sh, a
- * file-transfer app, or adb push; see themes/README.md. One "default" entry covers every app
- * without its own picture; cinematic_home must be on for either to show.
+ * file-transfer app, or adb push; see themes/README.md. The "default" entry is Home's own idle
+ * backdrop — the top bar focused, or nothing focused yet right after Home starts — not a silent
+ * fallback for every app that has no picture of its own; cinematic_home must be on for either
+ * to show.
  */
 final class AppBackgrounds {
     static final String FOLDER_NAME = "app_backgrounds";
@@ -34,13 +36,23 @@ final class AppBackgrounds {
         return base != null ? new File(base, FOLDER_NAME) : null;
     }
 
-    /** This app's own picture, or the default one, or null for the usual icon/banner backdrop. */
+    /** This app's own picture, or null for the usual icon/banner backdrop — the "default" entry is
+     *  not a fallback here; see defaultFile for Home's idle backdrop. */
     static File forPackage(Context ctx, String pkg) {
+        return file(ctx, pkg);
+    }
+
+    /** Home's idle backdrop: the top bar focused, or right after Home starts before anything else
+     *  has been. Null if none is set. */
+    static File defaultFile(Context ctx) {
+        return file(ctx, DEFAULT_KEY);
+    }
+
+    private static File file(Context ctx, String key) {
         File dir = dir(ctx);
         if (dir == null) return null;
         SharedPreferences choices = ctx.getSharedPreferences(Config.SETTINGS_NAME, Context.MODE_PRIVATE);
-        String name = choices.getString(KEY_PREFIX + pkg, null);
-        if (name == null) name = choices.getString(KEY_PREFIX + DEFAULT_KEY, null);
+        String name = choices.getString(KEY_PREFIX + key, null);
         if (name == null) return null;
         File file = new File(dir, name);
         return file.isFile() ? file : null;

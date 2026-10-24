@@ -144,6 +144,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private String glowStyle;
     private ImageView heroArt;
     private static final float HERO_ART_ALPHA = 0.5f;
+    /** A custom AppBackgrounds photo reads as a picture, not a colour wash the way an icon-blur
+     *  backdrop does, so it stays brighter — darkened only by heroScrim, not by this too. */
+    private static final float CUSTOM_ART_ALPHA = 0.92f;
     /** Softened artwork per app (HeroArt, about 5 KB each), made the first time its dock tile is focused. */
     private final Map<String, Bitmap> heroArtCache = new HashMap<>();
     /** The ambient glow's colour for an app with a custom AppBackgrounds picture — the picture's own
@@ -404,7 +407,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         heroArt = findViewById(R.id.heroArt);
         cinematic = cfg.cinematicHome;
         glowStyle = cfg.glowStyle;
-        if (cinematic) setUpCinematicShelf();
+        if (cinematic) {
+            setUpCinematicShelf();
+            showDefaultBackdrop();
+        }
         // dock_title false: the name above the dock (and the cinematic lines under it) never shows; the glow
         // still follows the dock.
         if (!cfg.dockTitle) hero.setVisibility(View.GONE);
@@ -677,10 +683,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         if (festive) applyFestiveSkin((TextView) btnInputs, (TextView) btnSettings);
 
-        // Hide the glass when focus leaves the tiles.
+        // Hide the glass when focus leaves the tiles, and show Home's own idle backdrop (App
+        // backgrounds' "default" picture) on the top bar — a dock app's picture only belongs on
+        // its own tile, not wherever focus happens to be.
         getWindow().getDecorView().getViewTreeObserver().addOnGlobalFocusChangeListener((oldF, newF) -> {
             boolean onTile = newF != null && newF.getId() == R.id.card;
-            if (!onTile) hideGlass();
+            if (!onTile) {
+                hideGlass();
+                if (cinematic) showDefaultBackdrop();
+            }
         });
 
         packageFilter.addAction(Intent.ACTION_PACKAGE_ADDED);
@@ -1623,13 +1634,18 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         heroArt.animate().alpha(0f).setDuration(140).withEndAction(() -> {
             heroArt.setImageBitmap(next);
-            heroArt.animate().alpha(HERO_ART_ALPHA).setDuration(420).start();
+            heroArt.animate().alpha(heroArtAlpha()).setDuration(420).start();
         }).start();
     }
 
+    private float heroArtAlpha() {
+        return heroArtAccent.containsKey(heroArtKey) ? CUSTOM_ART_ALPHA : HERO_ART_ALPHA;
+    }
+
     private void fadeHeroArt(int ms) {
-        if (!animations) heroArt.setAlpha(HERO_ART_ALPHA);
-        else heroArt.animate().alpha(HERO_ART_ALPHA).setDuration(reducedMotion ? Math.min(ms, Motion.REDUCED_MS) : ms).start();
+        float alpha = heroArtAlpha();
+        if (!animations) heroArt.setAlpha(alpha);
+        else heroArt.animate().alpha(alpha).setDuration(reducedMotion ? Math.min(ms, Motion.REDUCED_MS) : ms).start();
     }
 
     /** "Last opened yesterday, 9:40 PM", the time in white; nothing (but the same height) when it was never seen. */
@@ -1796,6 +1812,46 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             setAmbient(color);
             ambient.animate().alpha(1f).setDuration(500).start();
         }).start();
+    }
+
+    /** A stable heroArtCache/heroArtKey slot for Home's idle backdrop — not a real app, so not a
+     *  component name the way every other key is. */
+    private static final String DEFAULT_BACKDROP_KEY = "app_bg:default-idle";
+
+    /** Home's own backdrop (App backgrounds' "default" picture) for when nothing dock- or
+     *  grid-focused is on screen: the top bar focused, or right after Home starts. A no-op without
+     *  a default picture set, leaving whatever was on screen (the base launcher's plain black). */
+    private void showDefaultBackdrop() {
+        File def = AppBackgrounds.defaultFile(this);
+        if (def == null) return;
+        if (!DEFAULT_BACKDROP_KEY.equals(heroArtKey)) {
+            Bitmap art = heroArtCache.get(DEFAULT_BACKDROP_KEY);
+            if (art == null) {
+                art = AppBackgrounds.load(def);
+                if (art != null) {
+                    heroArtCache.put(DEFAULT_BACKDROP_KEY, art);
+                    heroArtAccent.put(DEFAULT_BACKDROP_KEY, AppBackgrounds.averageColor(art));
+                }
+            }
+            if (art == null) return;
+            heroArtKey = DEFAULT_BACKDROP_KEY;
+            heroArt.animate().cancel();
+            heroArt.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            heroArt.setImageBitmap(art);
+        }
+        hero.animate().cancel();
+        hero.setAlpha(0f);
+        heroShown = false;
+        heroArt.animate().alpha(CUSTOM_ART_ALPHA).setDuration(400).start();
+        if (ambientGlow) {
+            Integer color = heroArtAccent.get(DEFAULT_BACKDROP_KEY);
+            if (color != null) {
+                stopAmbientAnimation();
+                ambient.animate().cancel();
+                setAmbient(color);
+                ambient.animate().alpha(1f).setDuration(400).start();
+            }
+        }
     }
 
     private void hideHero() {

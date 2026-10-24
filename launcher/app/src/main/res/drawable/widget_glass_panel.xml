@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Prayer and Holiday cards' frosted-glass look only — see glass_panel.xml for the dropdowns
+     and popups, which need to stay readable rather than transparent. A translucent dark tint (not
+     a real blur — see AGENTS.md's hard rule against one, for TVs with 1 GB of RAM) in the same
+     family as the top bar's pills (pill_bg.xml) and dock_glass (DockDecoration), just darker so
+     white text stays legible. Whatever is behind the card — wallpaper, the hero backdrop, the
+     dock's glow — shows through its edges and corners. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <gradient android:angle="270" android:startColor="#402A2A2E" android:endColor="#54161618" />
+            <stroke android:width="1.5dp" android:color="#59FFFFFF" />
+            <corners android:radius="20dp" />
+        </shape>
+    </item>
+    <!-- A glossy top sheen, like light catching the top edge of real glass. -->
+    <item android:bottom="60dp">
+        <shape android:shape="rectangle">
+            <gradient android:angle="270" android:startColor="#26FFFFFF" android:endColor="#00FFFFFF" />
+            <corners android:topLeftRadius="20dp" android:topRightRadius="20dp"
+                android:bottomLeftRadius="0dp" android:bottomRightRadius="0dp" />
+        </shape>
+    </item>
+</layer-list>
