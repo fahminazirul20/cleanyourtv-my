@@ -473,7 +473,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             holidayStates.add(JakimZones.holidayState(prayerZone));
             for (String s : cfg.extraHolidayStates) if (!holidayStates.contains(s)) holidayStates.add(s);
         }
-        Holidays.refreshIfNeeded(this, holidayStates, this::updateHolidayPanel);
+        if (showPrayerCard) Holidays.refreshIfNeeded(this, holidayStates, this::updateHolidayPanel);
         showStats = cfg.showStats;
         shamsi = cfg.shamsiDate;
         greetingName = cfg.greetingName;

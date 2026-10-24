@@ -67,6 +67,11 @@
             android:layout_marginTop="28dp" />
 
         <TextView
+            android:id="@+id/widgetChoice"
+            style="@style/SettingsRow"
+            android:layout_marginTop="10dp" />
+
+        <TextView
             android:id="@+id/prayerZoneChoice"
             style="@style/SettingsRow"
             android:layout_marginTop="10dp" />
@@ -78,6 +83,11 @@
 
         <TextView
             android:id="@+id/azanChoice"
+            style="@style/SettingsRow"
+            android:layout_marginTop="10dp" />
+
+        <TextView
+            android:id="@+id/testAzanChoice"
             style="@style/SettingsRow"
             android:layout_marginTop="10dp" />
 

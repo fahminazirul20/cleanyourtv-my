@@ -50,6 +50,8 @@
     <string name="rows_below_dock_label">Rows below dock</string>
     <string name="wallpaper_label">Wallpaper</string>
     <string name="wallpaper_state">Wallpaper: %1$s</string>
+    <!-- Launcher settings: on/off for both the Waktu Solat and Public Holidays cards together. -->
+    <string name="widget_setting_state">Prayer &amp; holiday cards: %1$s</string>
     <!-- Launcher settings: opens the 60-zone JAKIM picker (JakimZones) for the Waktu Solat card. -->
     <string name="prayer_zone_setting">Prayer zone</string>
     <string name="prayer_zone_setting_state">Prayer zone: %1$s</string>
@@ -66,6 +68,11 @@
     <!-- Launcher settings: toggles the azan alert (AzanManager/AzanActivity). -->
     <string name="azan_setting_state">Azan: %1$s</string>
     <string name="azan_now">%1$s has begun</string>
+    <!-- Launcher settings: a row that previews the full-screen azan alert (AzanActivity) on demand,
+         audio included, without waiting for a real prayer time. -->
+    <string name="test_azan_setting">Test azan</string>
+    <string name="test_azan_subuh">Subuh</string>
+    <string name="test_azan_other">Other prayers (Zohor, Asar, Maghrib, Isyak)</string>
     <!-- Launcher settings: per-app cinematic backdrop photos (AppBackgrounds). Needs cinematic_home. -->
     <string name="app_backgrounds_setting">App backgrounds</string>
     <string name="app_backgrounds_setting_state">App backgrounds: %1$s</string>

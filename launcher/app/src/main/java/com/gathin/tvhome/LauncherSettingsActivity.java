@@ -26,6 +26,8 @@ public final class LauncherSettingsActivity extends Activity {
     private final TextView[] columnChoices = new TextView[4];
     private final TextView[] rowChoices = new TextView[4];
     private TextView wallpaperChoice;
+    private TextView widgetChoice;
+    private boolean showPrayerCard;
     private TextView prayerZoneChoice;
     private String prayerZone;
     private TextView holidayStatesChoice;
@@ -65,6 +67,7 @@ public final class LauncherSettingsActivity extends Activity {
         animations = config.animations;
         advancedEffects = config.animations && config.advancedEffects;
         prayerZone = config.prayerZone;
+        showPrayerCard = config.showPrayerCard;
         azanEnabled = config.azanEnabled;
 
         int[] ids = {R.id.columns4, R.id.columns5, R.id.columns6, R.id.columns7};
@@ -99,6 +102,14 @@ public final class LauncherSettingsActivity extends Activity {
         }
         wallpaperChoice = findViewById(R.id.wallpaperChoice);
         wallpaperChoice.setOnClickListener(v -> showWallpaperPicker());
+        widgetChoice = findViewById(R.id.widgetChoice);
+        widgetChoice.setOnClickListener(v -> {
+            showPrayerCard = !showPrayerCard;
+            choices.edit().putBoolean("show_prayer_card", showPrayerCard).apply();
+            AzanManager.scheduleNext(this);
+            setResult(RESULT_OK);
+            refresh();
+        });
         prayerZoneChoice = findViewById(R.id.prayerZoneChoice);
         prayerZoneChoice.setOnClickListener(v -> showPrayerZonePicker());
         holidayStatesChoice = findViewById(R.id.holidayStatesChoice);
@@ -111,6 +122,9 @@ public final class LauncherSettingsActivity extends Activity {
             setResult(RESULT_OK);
             refresh();
         });
+        TextView testAzanChoice = findViewById(R.id.testAzanChoice);
+        testAzanChoice.setText(R.string.test_azan_setting);
+        testAzanChoice.setOnClickListener(v -> showTestAzanPicker());
         appBackgroundsChoice = findViewById(R.id.appBackgroundsChoice);
         appBackgroundsChoice.setOnClickListener(v -> showAppBackgroundsPicker());
         screensaverImagesChoice = findViewById(R.id.screensaverImagesChoice);
@@ -200,6 +214,18 @@ public final class LauncherSettingsActivity extends Activity {
                     setResult(RESULT_OK);
                     refresh();
                 })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    /** Previews the full-screen azan alert on demand -- same AzanActivity a real prayer time would
+     *  show, audio included -- so the picture, text and sound can all be checked without waiting. */
+    private void showTestAzanPicker() {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.test_azan_setting)
+                .setItems(new String[]{getString(R.string.test_azan_subuh), getString(R.string.test_azan_other)},
+                        (d, which) -> startActivity(new Intent(this, AzanActivity.class)
+                                .putExtra(AzanActivity.EXTRA_PRAYER, which == 0 ? "Subuh" : "Zohor")))
                 .setNegativeButton(android.R.string.cancel, null)
                 .show();
     }
@@ -493,6 +519,8 @@ public final class LauncherSettingsActivity extends Activity {
                 "none".equals(wallpaperCurrent) ? getString(R.string.wallpaper_none)
                         : wallpaperCurrent != null ? wallpaperCurrent
                         : getString(R.string.wallpaper_theme_default)));
+        widgetChoice.setText(getString(R.string.widget_setting_state,
+                getString(showPrayerCard ? R.string.on : R.string.off)));
         JakimZones.Zone zone = JakimZones.byCode(prayerZone);
         prayerZoneChoice.setText(getString(R.string.prayer_zone_setting_state,
                 zone != null ? zone.state + " (" + zone.code + ")" : prayerZone));

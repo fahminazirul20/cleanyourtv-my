@@ -409,6 +409,7 @@ final class Config {
         advancedEffects = choices.getBoolean("advanced_effects", advancedEffects);
         prayerZone = choices.getString("prayer_zone", prayerZone);
         azanEnabled = choices.getBoolean("azan_enabled", azanEnabled);
+        showPrayerCard = choices.getBoolean("show_prayer_card", showPrayerCard);
         File wallpaper = dir != null ? new File(dir, WALLPAPER_NAME) : null;
         if (wallpaper != null && !(wallpaper.isFile() && wallpaper.length() > 0)) wallpaper = null;
         // A theme can also switch the wallpaper off while the file is still there.
