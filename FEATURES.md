@@ -85,16 +85,23 @@ without the cost of a real blur) and `dock_title: false` (hides the big app-name
 `cinematic_home` would otherwise show above the dock, so the background changes without eating the
 vertical space other app rows need).
 
-**App backgrounds** (new, Launcher settings) replaces an app's own icon/banner with a picture of
-your own for that backdrop, per app, plus an optional default for apps without one — the ambient
-glow switches to the picture's own average colour too, not the app's usual accent, so the two stay
-matched (`HeroArt.averageColor`, `MainActivity.showHero`/`showHeroArt`). Pictures live in
-`app_backgrounds/` in the launcher's external files dir (same mechanism as `wallpapers/`), listed by
-Launcher settings from whatever is already there — not an in-app picker, since most Android TV
-firmware has no app that answers one for images (this fork's own TV included); push pictures there
-with `tools/theme.sh`, a file-transfer app, or `adb push`. See `themes/README.md`'s App backgrounds
-section. Deliberately **not** downloaded artwork — your own pictures or the app's own installed icon
-avoid any copyright question around bundling or fetching official promotional art.
+**App backgrounds** (new, Launcher settings) shows a picture of your own as that app's cinematic
+backdrop — at its own resolution (centerCrop, not blurred down to a colour wash the way an
+icon/banner backdrop is), per app, plus a separate "Default background" shown only when the top
+bar is focused or Home has just started (not a fallback stamped onto every unassigned app). The
+ambient glow matches the picture's own average colour too, not the app's usual accent
+(`AppBackgrounds.averageColor`, `MainActivity.showHero`/`showHeroArt`/`showGlowOnly`).
+
+Pictures live in `app_backgrounds/` in the launcher's external files dir (same mechanism as
+`wallpapers/`); Launcher settings lists whatever is already in that folder, fresh every time the
+picker opens — **no rebuild needed to add one**. Not an in-app picker: most Android TV firmware has
+no app that answers `ACTION_OPEN_DOCUMENT`/`ACTION_GET_CONTENT` for images (this fork's own TV
+included), so pictures go in with `tools/theme.sh themes/<your-theme>` (copy the file into
+`themes/<your-theme>/app_backgrounds/` first), a file-transfer app pointed at that exact folder, or
+`adb push <file> /sdcard/Android/data/com.gathin.tvhome/files/app_backgrounds/`. See
+`themes/README.md`'s App backgrounds section. Deliberately **not** downloaded artwork — your own
+pictures or the app's own installed icon avoid any copyright question around bundling or fetching
+official promotional art.
 
 ## 5. Azan (adhan) alert
 
@@ -130,14 +137,53 @@ it also ends on its own once the audio finishes, or if something else comes to t
 | Public holiday states | Multi-select states for the Holidays card, or "Malaysia (all states)" |
 | (existing rows: Apps per row, Edit dock, Wallpaper, Animations, …) | Unchanged from the base project |
 
-## Tools needed to build/modify this launcher
+## Step 1: tools needed on your computer
 
-- **JDK 17** (e.g. Eclipse Temurin)
-- **Android SDK**: `platform-tools`, `platforms;android-34`, `build-tools;34.0.0`
-- **Python 3** (for `tools/tv.py`, `disable.sh`, `theme.sh`, etc. — the base project's own tooling)
-- **adb**, on the machine building/installing, with the TV on the same Wi-Fi network and USB/Network
-  debugging enabled on the TV (Settings → Device Preferences → About → tap Build 7×, then
-  Developer options)
+- **adb (platform-tools)** — the only one strictly required just to install the APK and push
+  config/theme changes once you already have a built `.apk`. Download:
+  [developer.android.com/tools/releases/platform-tools](https://developer.android.com/tools/releases/platform-tools)
+  (pick Windows/macOS/Linux). Unzip it anywhere; `adb.exe` (or `adb` on macOS/Linux) is inside —
+  add that folder to your `PATH`, or just `cd` into it and run commands from there.
+- **JDK 17** (e.g. [Eclipse Temurin](https://adoptium.net/temurin/releases/?version=17)) — only
+  needed if you're building the launcher from source (`build-and-install.sh`), not for installing
+  an already-built APK.
+- **Android SDK** `platform-tools`, `platforms;android-34`, `build-tools;34.0.0` — also build-only;
+  easiest via Android Studio's SDK Manager, or `sdkmanager` command-line tools if you don't want
+  the full IDE.
+- **Python 3** — runs `tools/tv.py`, `disable.sh`, `theme.sh`, etc. (the base project's own
+  tooling, used for debloating and pushing themes/config, not for the build itself).
+
+## Step 2: enable debugging on the TV
+
+Every Android TV / Google TV exposes this the same way, regardless of brand:
+
+1. **TV Settings → Device Preferences (or "About") → About** (wording varies slightly by brand/skin).
+2. Find **Build** (sometimes "Android TV OS build" or "Build number") and **select/click it 7
+   times in a row**. A toast counts down "You are now X steps from being a developer" and finally
+   "You are now a developer!".
+3. Back out one level to **Device Preferences → Developer options** (it's now visible).
+4. Turn on:
+   - **USB debugging** — required to connect at all, over USB or network.
+   - **Network debugging** / **Wireless debugging** (naming varies: MIUI TV calls it "Network
+     debugging", stock Google TV calls it "Wireless debugging" or "ADB debugging") — lets `adb`
+     connect over Wi-Fi instead of a USB cable, which is what this whole workflow uses.
+5. Find the TV's **IP address**: Settings → Network (or Network & Internet) → your connected
+   Wi-Fi/Ethernet → shows the IP, something like `192.168.1.50`.
+6. From your computer, with `adb` on your `PATH`:
+   ```bash
+   adb connect <tv-ip>:5555
+   ```
+   The TV shows an **"Allow USB debugging?"** (or "Allow wireless debugging") prompt with your
+   computer's RSA key fingerprint — accept it (tick "Always allow" so you aren't asked every time).
+   `adb devices` should now list the TV as `device` (not `unauthorized` or `offline`).
+
+**Google TV specifically** (Chromecast with Google TV, Sharp/TCL/Hisense/Sony Google TV
+models, …): there is no "install from file manager" or "unknown sources" toggle anywhere in the
+UI — `adb install app.apk` over the connection above is the *only* way to sideload an APK. If
+`adb connect` itself refuses or times out, double check Developer options → Wireless debugging is
+specifically turned **on** (not just visible) and that the TV and computer are on the same
+network/VLAN — some mesh Wi-Fi setups put TVs on a separate guest network that can't reach a
+computer on the main one.
 
 ## Manual setup, step by step
 
@@ -217,13 +263,6 @@ TV_HOST=<tv-ip> tools/restore.sh examples/<your-tv>/debloat.txt
      project rather than a merged feature.
    Open a PR against `Gathin23/cleanyourtv` for anything you do want to upstream, same as any other
    GitHub project; the project's `CONTRIBUTING.md` has its testing/PR conventions.
-
-### Suggested repo names
-
-- `cleanyourtv-my` — short, signals "Malaysia", matches the `.my` ccTLD convention
-- `cleanyourtv-waktu-solat` — descriptive, leads with the headline feature
-- `CleanTV-Malaysia`
-- `my-cleanyourtv`
 
 ## Screenshots
 
