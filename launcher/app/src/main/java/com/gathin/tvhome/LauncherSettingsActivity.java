@@ -6,6 +6,7 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.widget.LinearLayout;
@@ -15,6 +16,8 @@ import android.widget.Toast;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.List;
 
 /** Remote-friendly settings owned by the launcher; system settings stay one row away. */
@@ -38,14 +41,9 @@ public final class LauncherSettingsActivity extends Activity {
     private TextView azanChoice;
     private boolean azanEnabled;
     private TextView appBackgroundsChoice;
-    private List<String> dockApps;
-    /** Apps the App backgrounds picker offers, beyond the dock's own apps: the streaming and media
-     *  apps a Malaysian setup is likely to have, the same way WatchNext hardcodes its package list.
-     *  A package not installed is simply left out of the picker. */
-    private static final String[] BACKGROUND_PACKAGES = {
-            "com.netflix.ninja", "com.google.android.youtube.tv", "com.disney.disneyplus",
-            "my.gov.rtm.tv", "org.jellyfin.androidtv", "com.mitv.videoplayer",
-    };
+    private static final int STORAGE_PERMISSION_REQUEST = 4200;
+    private String pendingBgKey;
+    private String pendingBgLabel;
     private TextView animationsChoice;
     private TextView advancedChoice;
     private TextView followThemeChoice;
@@ -66,7 +64,6 @@ public final class LauncherSettingsActivity extends Activity {
         advancedEffects = config.animations && config.advancedEffects;
         prayerZone = config.prayerZone;
         azanEnabled = config.azanEnabled;
-        dockApps = config.dockApps;
 
         int[] ids = {R.id.columns4, R.id.columns5, R.id.columns6, R.id.columns7};
         for (int i = 0; i < ids.length; i++) {
@@ -288,28 +285,36 @@ public final class LauncherSettingsActivity extends Activity {
         });
     }
 
-    /** Default background, then each known app by its own label (BACKGROUND_PACKAGES plus the
-     *  dock's own apps, deduped, apps not installed left out); a custom picture already set shows a
-     *  checkmark. Picking one opens showAppBackgroundAction for choose/remove. */
+    /** Default background, then every installed app (same LEANBACK_LAUNCHER/LAUNCHER query the
+     *  App library uses, so this isn't limited to a hardcoded handful) sorted by label; a custom
+     *  picture already set shows a checkmark. Picking one opens showAppBackgroundAction. */
     private void showAppBackgroundsPicker() {
         List<String> keys = new ArrayList<>();
         List<String> labels = new ArrayList<>();
         keys.add(AppBackgrounds.DEFAULT_KEY);
         labels.add(getString(R.string.app_background_default));
+
         PackageManager pm = getPackageManager();
-        List<String> candidates = new ArrayList<>(Arrays.asList(BACKGROUND_PACKAGES));
-        for (String pkg : dockApps) if (!candidates.contains(pkg)) candidates.add(pkg);
-        for (String pkg : candidates) {
-            if (keys.contains(pkg)) continue;
-            String label;
-            try {
-                label = String.valueOf(pm.getApplicationInfo(pkg, 0).loadLabel(pm));
-            } catch (PackageManager.NameNotFoundException e) {
-                continue;   // not installed on this TV
+        String self = getPackageName();
+        Map<String, ResolveInfo> unique = new LinkedHashMap<>();
+        for (String category : new String[]{Intent.CATEGORY_LEANBACK_LAUNCHER, Intent.CATEGORY_LAUNCHER}) {
+            for (ResolveInfo info : pm.queryIntentActivities(new Intent(Intent.ACTION_MAIN).addCategory(category), 0)) {
+                if (info.activityInfo == null) continue;
+                String pkg = info.activityInfo.packageName;
+                if (!pkg.equals(self) && !unique.containsKey(pkg)) unique.put(pkg, info);
             }
-            keys.add(pkg);
-            labels.add(label);
         }
+        List<Map.Entry<String, String>> apps = new ArrayList<>();
+        for (Map.Entry<String, ResolveInfo> e : unique.entrySet()) {
+            apps.add(new java.util.AbstractMap.SimpleEntry<>(e.getKey(),
+                    Cards.cleanLabel(String.valueOf(e.getValue().loadLabel(pm)), e.getKey())));
+        }
+        apps.sort((a, b) -> a.getValue().compareToIgnoreCase(b.getValue()));
+        for (Map.Entry<String, String> e : apps) {
+            keys.add(e.getKey());
+            labels.add(e.getValue());
+        }
+
         String[] items = new String[labels.size()];
         for (int i = 0; i < labels.size(); i++) {
             items[i] = AppBackgrounds.has(this, keys.get(i)) ? labels.get(i) + " ✓" : labels.get(i);
@@ -321,13 +326,19 @@ public final class LauncherSettingsActivity extends Activity {
                 .show();
     }
 
-    /** Lists the pictures in app_backgrounds/ (same folder tools/theme.sh pushes) to assign to this
-     *  app, with Remove when one is already set. Empty folder: a Toast naming the path instead of
-     *  an empty dialog, since there is nothing to pick from an external app on this TV's firmware
-     *  (see AppBackgrounds's own note). */
+    /** Lists pictures from app_backgrounds/ (no permission needed) plus, once granted, the TV's own
+     *  Pictures/DCIM/Download — so any photo already on the TV can be picked, not only one pushed
+     *  into app_backgrounds/. Asks for the storage permission the first time this opens without it,
+     *  then re-opens itself once the system dialog answers. */
     private void showAppBackgroundAction(String key, String label) {
-        File dir = AppBackgrounds.dir(this);
-        List<File> images = WallpaperRotation.images(dir);
+        if (!AppBackgrounds.hasStoragePermission(this)) {
+            pendingBgKey = key;
+            pendingBgLabel = label;
+            requestPermissions(new String[]{AppBackgrounds.storagePermission()}, STORAGE_PERMISSION_REQUEST);
+            return;
+        }
+        List<File> images = new ArrayList<>();
+        for (File dir : AppBackgrounds.sourceDirs(this)) images.addAll(WallpaperRotation.images(dir));
         if (images.isEmpty()) {
             Toast.makeText(this, getString(R.string.app_background_empty_folder,
                     "Android/data/" + getPackageName() + "/files/" + AppBackgrounds.FOLDER_NAME),
@@ -339,12 +350,14 @@ public final class LauncherSettingsActivity extends Activity {
         SharedPreferences choices = getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE);
         String current = choices.getString("app_bg:" + key, null);
         int checked = -1;
-        for (int i = 0; i < names.length; i++) if (names[i].equals(current)) checked = i;
+        for (int i = 0; i < images.size(); i++) {
+            if (images.get(i).getAbsolutePath().equals(current)) checked = i;
+        }
         AlertDialog.Builder builder = new AlertDialog.Builder(this)
                 .setTitle(label)
                 .setSingleChoiceItems(names, checked, (d, which) -> {
                     d.dismiss();
-                    AppBackgrounds.set(this, key, names[which]);
+                    AppBackgrounds.set(this, key, images.get(which).getAbsolutePath());
                     setResult(RESULT_OK);
                     refresh();
                 })
@@ -357,6 +370,17 @@ public final class LauncherSettingsActivity extends Activity {
             });
         }
         builder.show();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == STORAGE_PERMISSION_REQUEST && pendingBgKey != null) {
+            String key = pendingBgKey, label = pendingBgLabel;
+            pendingBgKey = null;
+            pendingBgLabel = null;
+            showAppBackgroundAction(key, label);
+        }
     }
 
     private static int indexOf(List<File> images, String name) {
@@ -398,11 +422,7 @@ public final class LauncherSettingsActivity extends Activity {
         holidayStatesChoice.setText(getString(R.string.holiday_states_setting_state, holidayStatesSummary()));
         azanChoice.setText(getString(R.string.azan_setting_state,
                 getString(azanEnabled ? R.string.on : R.string.off)));
-        int bgCount = 0;
-        if (AppBackgrounds.has(this, AppBackgrounds.DEFAULT_KEY)) bgCount++;
-        List<String> bgCandidates = new ArrayList<>(Arrays.asList(BACKGROUND_PACKAGES));
-        for (String pkg : dockApps) if (!bgCandidates.contains(pkg)) bgCandidates.add(pkg);
-        for (String pkg : bgCandidates) if (AppBackgrounds.has(this, pkg)) bgCount++;
+        int bgCount = AppBackgrounds.countAssigned(this);
         appBackgroundsChoice.setText(getString(R.string.app_backgrounds_setting_state,
                 bgCount == 0 ? getString(R.string.app_backgrounds_none)
                         : getString(R.string.app_backgrounds_count, bgCount)));

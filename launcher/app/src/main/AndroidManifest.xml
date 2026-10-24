@@ -29,6 +29,12 @@
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
+    <!-- App backgrounds only: browsing the TV's own Pictures/DCIM/Download for a photo to use as a
+         cinematic backdrop, beyond what's pushed into app_backgrounds/ (which needs neither). Asked
+         for at runtime, the first time the picker needs it. -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+
     <!-- Android 11+ package visibility: lets the launcher list the TV apps it shows as tiles, and the
          apps that declare a module card (docs/specs/card.md). -->
     <queries>
